@@ -1,0 +1,418 @@
+@define@ syntax extension
+#--------abyss's xdcc script--------#
+
+####
+#### Aliases
+####
+
+alias offer {
+  if {"[lindex [args] 0]" == "?"} { /help offer ; complete ; return }
+  if {[get_cookie xdcc(xdccnumber) "0"] == 0} { synecho offer "[eheader "XDCC"] No packs offered..."
+  } else {
+    packcheck
+    if {[string length [lindex [args] 0]]} {
+      set dest "[lindex [args] 0]"
+    } else {
+      if {[window_type] == "status"} { set dest "" 
+      } elseif {[window_type] == "chat"} { set dest "=[window_name]"  
+      } else { set dest "[window_name]" } 
+    }
+    if {[string length $dest]} {
+      parsemsg $dest "[applyxdccstart "[get_cookie xdcc(xdccnumber) "0"]" "[ro [expr [config xdccslots] - [dcc_count]]]" "[config xdccslots]"]"
+      for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+        set fsize "0"
+        foreach phile [get_cookie xdcc(file$x)] {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        parsemsg $dest "[applyxdccpack "$x" "[get_cookie xdcc(gets$x)]" "$fsize" "[join [get_cookie xdcc(desc$x)]]" "[get_cookie xdcc(file$x)]"]"
+        if {[string length [get_cookie xdcc(note$x)]]} { 
+          parsemsg $dest "[applyxdccnote "$x" "[join [get_cookie xdcc(note$x)]]"]"
+        }
+      }
+      parsemsg $dest "[applyxdccend "[get_cookie xdcc(xdccnumber) "0"]" "[ro [expr [config xdccslots] - [dcc_count]]]" "[config xdccslots]"]"
+    } else { 
+      synecho offer "[eheader "XDCC"] Invalid request..."
+    }
+  }
+  killpipe offer
+  noidle
+  complete 
+}
+alias xdcc {
+  if {"[lindex [args] 0]" == "?"} { /help xdcc ; complete ; return }
+  packcheck
+  if {[lindex [args] 0] == "offer" || [lindex [args] 0] == "add"} {
+    set files ""
+    if {![string length [lrange [args] 2 end]]} { synecho xdcc "[eheader "XDCC"] A pack description must be specified..."
+    } else {
+      foreach xfile [split [lindex [args] 1] ", "] {
+        if {![wmatch *\\* $xfile]} { set xfile "[replace [pwd] "/" "\\"]\\$xfile" }
+        if {![file exists $xfile]} { synecho xdcc "[eheader "XDCC"] ([b]$xfile[b]) Invalid file..."
+        } else { lappend files "$xfile" }
+      }
+      if {![string length $files]} { synecho xdcc "[eheader "XDCC"] No files to add..." 
+      } else {
+        set_cookie xdcc(xdccnumber) [expr [get_cookie xdcc(xdccnumber) "0"] + 1]
+        set_cookie xdcc(file[get_cookie xdcc(xdccnumber)]) "$files"
+        set_cookie xdcc(desc[get_cookie xdcc(xdccnumber)]) "[lrange [args] 2 end]"
+        set_cookie xdcc(gets[get_cookie xdcc(xdccnumber)]) "0"
+        set fsize "0"
+        foreach phile "$files" {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        synecho xdcc "[eheader "XDCC"] Added Pack: ([b]\#[get_cookie xdcc(xdccnumber)][b]) [b]0[b]x ([b]$fsize[b]k) [join [lrange [args] 2 end]]"
+      }
+    }
+  } elseif {[lindex [args] 0] == "plist"} {
+    /offer [lrange [args] 1 end]
+  } elseif {[lindex [args] 0] == "file"} {
+    if {![string length [get_cookie xdcc(file[lindex [args] 1])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } else {
+      set files ""
+      foreach xfile [split [lindex [args] 2] ", "] {
+        if {![wmatch *\\* $xfile]} { set xfile "[replace [pwd] "/" "\\"]\\$xfile" }
+        if {![file exists $xfile]} { synecho xdcc "[eheader "XDCC"] ([b]$xfile[b]) Invalid file..."
+        } else { lappend files "$xfile" }
+      }
+      if {![string length $files]} { synecho xdcc "[eheader "XDCC"] No files to add..." 
+      } else {
+        set_cookie xdcc(file[lindex [args] 1]) "$files"
+        synecho xdcc "[eheader "XDCC"] Set file for pack ([b][lindex [args] 1][b]) to ([b][join $files][b])..."
+      }
+    }
+  } elseif {[lindex [args] 0] == "save"} {
+    if {![string length [lindex [args] 1]]} { synecho xdcc "[eheader "Save"] Please specify a filename to use for saving..." 
+    } else {
+      if {![wmatch *\\* [lindex [args] 1]]} { set zfile "[replace [pwd] "/" "\\"]\\[lindex [args] 1]"
+      } else { set zfile "[lindex [args] 1]" }
+      if {![string match *.pkl $zfile]} { append zfile ".pkl" }
+      if {![string length [lrange [args] 2 end]]} { set pdesc "no description"
+      } else { set pdesc "[lrange [args] 2 end]" }
+      set setfile [open "$zfile" w] 
+      synecho ssave "[eheader "XDCC"] Creating packfile ([b][file tail $zfile][b])..."
+      puts $setfile "@define@ syntax packfile"
+      synecho ssave "[eheader "XDCC"] Timestamping packfile ([sb][string tolower [clock format [clock seconds] -format "%m/%d/%y at %I:%M:%S%p"]][sb])..."
+      puts $setfile "@create@ [string tolower [clock format [clock seconds] -format "%m/%d/%y at %I:%M:%S%p"]]"
+      puts $setfile "@pkdesc@ $pdesc"
+      synecho xdcc "[eheader "XDCC"] Writing packs to packfile..."
+      for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+        puts $setfile "[list [get_cookie xdcc(file$x)]] [list [get_cookie xdcc(gets$x)]] [list [get_cookie xdcc(desc$x)]] [list [get_cookie xdcc(note$x)]]"
+      }
+      close $setfile
+      synecho xdcc "[eheader "XDCC"] XDCC packsave process completed..."
+    }
+  } elseif {[lindex [args] 0] == "load"} {
+    set flag ""
+    if {![wmatch *\\* [lindex [args] 1]]} { set zfile "[replace [pwd] "/" "\\"]\\[lindex [args] 1]"
+    } else { set zfile "[lindex [args] 1]" }
+    if {![string match *.pkl $zfile]} { append zfile ".pkl" }
+    if {![string length [lindex [args] 1]]} { synecho xdcc "[eheader "XDCC"] XDCC packload failure... No files specified..." 
+    } elseif {![file exists $zfile]} { synecho xdcc "[eheader "XDCC"] XDCC packload failure... Non-existant file..." 
+    } else {
+      synecho xdcc "[eheader "XDCC"] Loading packlist from file ([b][file tail $zfile][b])..."
+      set searchfile [open "$zfile" r]
+      set numm 0
+      set xx [gets $searchfile]
+      if {$xx != "@define@ syntax packfile"} {
+        synecho xdcc "[eheader "XDCC"] File authentication failed... aborting..."
+      } else {
+        set xx [gets $searchfile]
+        if {[string range $xx 0 7] != "@create@"} {
+          synecho xdcc "[eheader "XDCC"] File authentication failed... aborting..."
+        } else {
+          synecho xdcc "[eheader "XDCC"] Packlist created on ([b][string range $xx 9 end][b])..."
+          set xx [gets $searchfile]
+          if {[string range $xx 0 7] != "@pkdesc@"} {
+            synecho xdcc "[eheader "XDCC"] File authentication failed... aborting..."
+          } else {
+            synecho xdcc "[eheader "XDCC"] Packlist description ([b][string range $xx 9 end][b])..."
+            while {![eof $searchfile]} {
+              set xx [gets $searchfile]
+              if {[string length $xx]} {
+                incr numm
+                set_cookie xdcc(file$numm) [lindex $xx 0]
+                set_cookie xdcc(gets$numm) [lindex $xx 1]
+                set_cookie xdcc(desc$numm) [lindex $xx 2]
+                set_cookie xdcc(note$numm) [lindex $xx 3]
+              }
+            }
+            set_cookie xdcc(xdccnumber) "$numm"
+            synecho xdcc "[eheader "XDCC"] Load process successful for ([b][file tail [lindex [args] 1]][b])..."
+          }
+        }
+      }
+      close $searchfile
+    }
+  } elseif {[lindex [args] 0] == "log"} {
+    if {![file exists "logs/xdcc.log"]} { set x "[open "logs/xdcc.log" a+]" ; puts $x "" ; close $x }
+    synecho xdcc "[eheader "XDCC"] Viewing XDCC log..."
+    exec [config editor] logs/xdcc.log &
+  } elseif {[lindex [args] 0] == "send"} {
+    if {![string length [get_cookie xdcc(file[lindex [args] 2])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } elseif {![string length [lindex [args] 1]]} { synecho xdcc "[eheader "XDCC"] No pack destination specified..." 
+    } else {
+      foreach dest [split [lindex [args] 1] ","] { 
+        set_cookie xdcc(gets[lindex [args] 2]) [expr [get_cookie xdcc(gets[lindex [args] 2]) "0"] + 1]
+        set fsize "0"
+        foreach phile [get_cookie xdcc(file[lindex [args] 2])] {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        synecho xdcc "[eheader "XDCC"] Sending [b]$dest[b] XDCC pack [b]#[lindex [args] 2][b] which is $fsize[b]k[b]..."
+        /raw notice $dest :[applyxdccnotice "[lindex [args] 2]" "[join [get_cookie xdcc(desc[lindex [args] 2])]]" "$fsize" "[llength [get_cookie xdcc(file[lindex [args] 2])]]"]
+        foreach phile [get_cookie xdcc(file[lindex [args] 2])] {
+          /dcc send $dest $phile
+        }
+        if {[config xdcclog]} { logevent xdcc s "Sending \[[align $dest 10]\] pack #[lindex [args] 2]([get_cookie xdcc(file[lindex [args] 2])])" }
+      }
+    }
+  } elseif {[lindex [args] 0] == "tsend"} {
+    if {![string length [get_cookie xdcc(file[lindex [args] 2])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } elseif {![string length [lindex [args] 1]]} { synecho xdcc "[eheader "XDCC"] No pack destination specified..." 
+    } else {
+      foreach dest [split [lindex [args] 1] ","] { 
+        set_cookie xdcc(gets[lindex [args] 2]) [expr [get_cookie xdcc(gets[lindex [args] 2]) "0"] + 1]
+        set fsize "0"
+        foreach phile [get_cookie xdcc(file[lindex [args] 2])] {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        synecho xdcc "[eheader "XDCC"] Sending [b]$dest[b] XDCC pack [b]#[lindex [args] 2][b] which is $fsize[b]k[b]..."
+        /raw notice $dest :[applytxdccnotice "[lindex [args] 2]" "[join [get_cookie xdcc(desc[lindex [args] 2])]]" "$fsize" "[llength [get_cookie xdcc(file[lindex [args] 2])]]"]
+        foreach phile [get_cookie xdcc(file[lindex [args] 2])] {
+          /tdcc send $dest $phile
+        }
+        if {[config xdcclog]} { logevent xdcc s "Sending \[[align $dest 10]\] pack #[lindex [args] 2]([get_cookie xdcc(file[lindex [args] 2])])" }
+      }
+    }
+  } elseif {[lindex [args] 0] == "pass"} { /tog xp [lindex [args] 1]
+  } elseif {[lindex [args] 0] == "on"} { /tog xx on
+  } elseif {[lindex [args] 0] == "off"} { /tog xx off
+  } elseif {[lindex [args] 0] == "desc"} {
+    if {![string length [get_cookie xdcc(file[lindex [args] 1])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } elseif {![string length [lrange [args] 2 end]]} { synecho xdcc "[eheader "XDCC"] A pack description must be specified..."
+    } else { set_cookie xdcc(desc[lindex [args] 1]) "[lrange [args] 2 end]" ; synecho xdcc "[eheader "XDCC"] Changing description for pack [b]\#[lindex [args] 1][b]: [join [lrange [args] 2 end]]" }
+  } elseif {[lindex [args] 0] == "note"} {
+    if {![string length [get_cookie xdcc(file[join [lindex [args] 1]])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } elseif {[string length [lrange [args] 2 end]]} { set_cookie xdcc(note[lindex [args] 1]) "[lrange [args] 2 end]" ; synecho xdcc "[eheader "XDCC"] Added note for pack [b]\#[lindex [args] 1][b]: [join [lrange [args] 2 end]]"
+    } else { set_cookie xdcc(note[lindex [args] 1]) "" ; synecho xdcc "[eheader "XDCC"] Removed note for pack [b]\#[join [lindex [args] 1]][b]..." }
+  } elseif {[lindex [args] 0] == "sw" || [lindex [args] 0] == "switch"} {
+    if {![string length [get_cookie xdcc(file[join [lindex [args] 1]])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } elseif {![string length [get_cookie xdcc(file[join [lindex [args] 2]])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 2]][b]) Invalid pack number..."
+    } else {
+      set temp1 [get_cookie xdcc(file[join [lindex [args] 1]])]
+      set temp2 [get_cookie xdcc(desc[join [lindex [args] 1]])]
+      set temp3 [get_cookie xdcc(gets[join [lindex [args] 1]])]
+      set temp4 [get_cookie xdcc(note[join [lindex [args] 1]])]
+      set_cookie xdcc(file[join [lindex [args] 1]]) [get_cookie xdcc(file[join [lindex [args] 2]])]
+      set_cookie xdcc(desc[join [lindex [args] 1]]) [get_cookie xdcc(desc[join [lindex [args] 2]])]
+      set_cookie xdcc(gets[join [lindex [args] 1]]) [get_cookie xdcc(gets[join [lindex [args] 2]])]
+      set_cookie xdcc(note[join [lindex [args] 1]]) [get_cookie xdcc(note[join [lindex [args] 2]])]
+      set_cookie xdcc(file[join [lindex [args] 2]]) $temp1
+      set_cookie xdcc(desc[join [lindex [args] 2]]) $temp2
+      set_cookie xdcc(gets[join [lindex [args] 2]]) $temp3
+      set_cookie xdcc(note[join [lindex [args] 2]]) $temp4
+      synecho xdcc "[eheader "XDCC"] Switched poistions of packs [b][join [lindex [args] 1]][b] and [b][join [lindex [args] 2]][b]..."
+    }
+  } elseif {[lindex [args] 0] == "del" || [lindex [args] 0] == "rem"} {
+    if {![string length [get_cookie xdcc(file[join [lindex [args] 1]])]]} { synecho xdcc "[eheader "XDCC"] ([b][join [lindex [args] 1]][b]) Invalid pack number..."
+    } else {
+      set_cookie xdcc(xdccnumber) [expr [get_cookie xdcc(xdccnumber) "0"] - 1]
+      set fsize 0
+      foreach phile [get_cookie xdcc(file[lindex [args] 1])] {
+        incr fsize "[expr [file size $phile] / 1024]"
+      }
+      synecho xdcc "[eheader "XDCC"] Removed Pack: ([b]\#[join [lindex [args] 1]][b]) [b][get_cookie xdcc(gets[join [lindex [args] 1]])][b]x ([b]$fsize[b]k) [join [get_cookie xdcc(desc[join [lindex [args] 1]])]]"
+      set_cookie xdcc(file[join [lindex [args] 1]]) ""
+      set_cookie xdcc(desc[join [lindex [args] 1]]) ""
+      set_cookie xdcc(gets[join [lindex [args] 1]]) ""
+      set_cookie xdcc(note[join [lindex [args] 1]]) ""
+      for { set x [expr [join [lindex [args] 1]]+1] } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 2] } { incr x } {
+        set_cookie xdcc(file[expr $x - 1]) [get_cookie xdcc(file$x)]
+        set_cookie xdcc(desc[expr $x - 1]) [get_cookie xdcc(desc$x)]
+        set_cookie xdcc(gets[expr $x - 1]) [get_cookie xdcc(gets$x)]
+        set_cookie xdcc(note[expr $x - 1]) [get_cookie xdcc(note$x)]
+        if {$x == [expr [get_cookie xdcc(xdccnumber) "0"] + 1]} {
+          set_cookie xdcc(file$x) ""
+          set_cookie xdcc(desc$x) ""
+          set_cookie xdcc(gets$x) ""
+          set_cookie xdcc(note$x) ""
+        }
+      }
+    }
+  } elseif {[lindex [args] 0] == "clear"} {
+    synecho xdcc "[eheader "XDCC"] Clearing XDCC offer list..."
+    for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+      set_cookie xdcc(file$x) ""
+      set_cookie xdcc(desc$x) ""
+      set_cookie xdcc(gets$x) ""
+      set_cookie xdcc(note$x) ""
+    }
+    set_cookie xdcc(xdccnumber) "" 
+  } elseif {[lindex [args] 0] == "stat"} {
+    if {[get_cookie xdcc(xdccnumber) "0"] == 0} { synecho xdcc "[eheader "XDCC"] No packs offered..."
+    } else {
+      set totalsend 0
+      synecho xdcc "[boxtop "[b]XDCC Statistics[b] [sb](([sb][su]packs:[su] [b][get_cookie xdcc(xdccnumber) "0"][b][sb]))[sb]"]"
+      synecho xdcc "[boxside "[llb][b]Pack:[b][lrb][llb][b]Gets:[b]   [lrb][llb][b]Size:[b]   [lrb][llb][b]Total Sent:[b]    [lrb]"]"
+      for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+        set fsize "0"
+        foreach phile [get_cookie xdcc(file$x)] {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        incr totalsend [expr [get_cookie xdcc(gets$x)] * $fsize]
+        synecho xdcc "[boxside "[llb][align $x 5][lrb][llb][align [get_cookie xdcc(gets$x)] 8][lrb][llb][align "${fsize}kb" 8][lrb][llb][align "[expr [get_cookie xdcc(gets$x)] * ${fsize}]kb" 15][lrb]"]"
+      }
+      synecho xdcc "[boxbottom "[b]XDCC Statistics[b] [sb](([sb][su]packs:[su] [b][get_cookie xdcc(xdccnumber) "0"][b][sb]))[sb]"]"
+      synecho xdcc "[eheader "XDCC"] Total of [b]$totalsend[b]kb ([b][expr $totalsend / 1024][b]mb) leeched..."
+    }
+
+  } else {
+    if {[get_cookie xdcc(xdccnumber) "0"] == 0} { synecho xdcc "[eheader "XDCC"] No packs offered..."
+    } else {
+      if {[config xdccpass] != "off"} { synecho xdcc "[eheader "XDCC"] Displaying current XDcc offer... ([b]pass:[b] [config xdccpass])" 
+      } else { synecho xdcc "[eheader "XDCC"] Displaying current XDcc offer..." }
+      synecho xdcc "[applyxdccstart "[get_cookie xdcc(xdccnumber) "0"]" "[ro [expr [config xdccslots] - [dcc_count]]]" "[config xdccslots]"]"
+      for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+        set fsize 0
+        foreach phile [get_cookie xdcc(file$x)] {
+          incr fsize "[expr [file size $phile] / 1024]"
+        }
+        synecho xdcc "[applyxdccpack "$x" "[get_cookie xdcc(gets$x)]" "$fsize" "[join [get_cookie xdcc(desc$x)]]" "[get_cookie xdcc(file$x)]"]"
+        if {[string length [get_cookie xdcc(note$x)]]} { synecho xdcc "[applyxdccnote "$x" "[join [get_cookie xdcc(note$x)]]"]" }
+      }
+      synecho xdcc "[applyxdccend "[get_cookie xdcc(xdccnumber) "0"]" "[ro [expr [config xdccslots] - [dcc_count]]]" "[config xdccslots]"]"
+    }
+  }
+  killpipe xdcc
+  complete 
+}
+
+####
+#### Procedures
+####
+
+proc packcheck { } { 
+  for { set x "1" } { $x < [expr [get_cookie xdcc(xdccnumber) "0"] + 1] } { incr x } {
+    foreach xfile [get_cookie xdcc(file$x)] {
+      if {![file exists $xfile]} { 
+        set_cookie xdcc(xdccnumber) [expr [get_cookie xdcc(xdccnumber) "0"] - 1]
+        synecho xdcc "[eheader "XDCC"] Error Locating Pack: ([b]\#$x[b]) [b]?[b]x ([b]???[b]k) [join [get_cookie xdcc(desc$x)]]"
+        set_cookie xdcc(file$x) ""
+        set_cookie xdcc(desc$x) ""
+        set_cookie xdcc(gets$x) ""
+        set_cookie xdcc(note$x) ""
+        for { set z [expr $x + 1] } { $z < [expr [get_cookie xdcc(xdccnumber) "0"] + 2] } { incr z } {
+          set_cookie xdcc(file[expr $z - 1]) [get_cookie xdcc(file$z)]
+          set_cookie xdcc(desc[expr $z - 1]) [get_cookie xdcc(desc$z)]
+          set_cookie xdcc(gets[expr $z - 1]) [get_cookie xdcc(gets$z)]
+          set_cookie xdcc(note[expr $z - 1]) [get_cookie xdcc(note$z)]
+          if {$z == [expr [get_cookie xdcc(xdccnumber) "0"] + 1]} {
+            set_cookie xdcc(file$z) ""
+            set_cookie xdcc(desc$z) ""
+            set_cookie xdcc(gets$z) ""
+            set_cookie xdcc(note$z) ""
+          }
+        }
+        set x "0"
+      }
+    }
+  }
+}
+
+proc applyxdccstart { packs openslots totalslots } { global theme ; return "[eval "return $theme(xdccstart)"]" }
+proc applyxdccend { packs openslots totalslots } { global theme ; return "[eval "return $theme(xdccend)"]" }
+proc applyxdccnote { number text } { global theme ; return "[eval "return $theme(xdccnote)"]" }
+proc applyxdccpack { number gets size text files } { global theme ; return "[eval "return $theme(xdccpack)"]" }
+proc applyxdccnotice { packno packdesc packsize filecount } { global theme ; return "[eval "return $theme(xdccnotice)"]" }
+proc applytxdccnotice { packno packdesc packsize filecount } { global theme ; return "[eval "return $theme(xdcctnotice)"]" }
+
+####
+#### Events
+####
+
+on CTCP {
+  if {[string toupper [lindex [args] 1]] != "ACTION" && [string tolower [lindex $text 1]] == "xdcc"} {
+    if {[isin [ignorez [nick]![user]@[host]] "xdcc"]} {
+      set reply 0 ; set extra " [b]([b]Ignored[b])[b]" ; if {[config hideigctcp]} { set nodisplay "1" }
+    } else {
+      if {[string tolower [lindex $text 2]] == "send" || [string tolower [lindex $text 2]] == "tsend"} {
+        if {![config xdccoffering]} { set reply 0 ; set extra " [b]([b]XDCC Offering Disabled[b])[b]"
+        } elseif {[get_cookie xdcc(xdccnumber) "0"] == 0} { set reply 0 ; set extra " [b]([b]No Packs Offered[b])[b]"
+        } elseif {[ro [expr [config xdccslots] - [dcc_count]]] <= 0} { set reply 0 ; set extra " [b]([b]No Slots Available[b])[b]"
+        } elseif {[config xdccpass] != "off" && [lindex $text 4] != [config xdccpass]} { set reply 0 ; set extra " [b]([b]Bad Password[b])[b]"
+        } elseif {![string length [get_cookie xdcc(file[string trimleft [lindex $text 3] "#"]) ""]]} { set reply 0 ; set extra " [b]([b]No Such Pack[b])[b]" 
+        } else { set reply 1 ; set extra " " }
+      } elseif {[string tolower [lindex $text 2]] == "list"} {
+        if {![config xdccoffering]} { set reply 0 ; set extra " [b]([b]XDCC Offering Disabled[b])[b]"
+        } elseif {[get_cookie xdcc(xdccnumber) "0"] == 0} { set reply 0 ; set extra " [b]([b]No Packs Offered[b])[b]"
+        } else { set reply 1 ; set extra " " }
+      } else {
+        set reply 0 ; set extra " [b]([b]Invalid Command[b])[b]"
+      }
+    }
+
+    if {[info exists nodisplay]} { unset nodisplay
+    } else { echo "${rep}$extra" status }
+  
+    if {$reply} {
+      if {[string tolower [lrange $text 1 2]] == "xdcc send"} { /xdcc send [nick] [string trimleft [lindex $text 3] "#"]
+      } elseif {[string tolower [lrange $text 1 2]] == "xdcc tsend"} { /xdcc tsend [nick] [string trimleft [lindex $text 3] "#"]
+      } elseif {[string tolower [lrange $text 1 2]] == "xdcc list"} { if {[config xdcclog]} { logevent xdcc l "Sending \[[align [nick] 10]\] xdcc packlisting" } ; /offer [nick] }
+
+      if {[string tolower [lindex [args] 1]] == "xdcc"} { inc_xdccflood "[banmask 5 [nick]![user]@[host]]"
+      } else { inc_ctcpflood "[banmask 5 [nick]![user]@[host]]" }
+    }
+  }
+}
+
+on TIMER {
+  if {[string tolower [config offerchans]] != "none" && [config autooffer] && [config xdccoffering]} { 
+    if {![info exists xdcctime]} { set xdcctime 0 }
+    incr xdcctime
+    if {$xdcctime >= [config autooffer]} { 
+      set schan ""
+      foreach chan [split [config offerchans]] { 
+        if {[ison [my_nick] $chan]} {
+          if {[string match *m* [lindex [mode $chan] 0]]} { 
+            if {[isop [my_nick] $chan] || [isvoice [my_nick] $chan]} {
+              lappend schan "$chan"
+            }
+          } else {
+            lappend schan "$chan"
+          }
+        } 
+      }
+      set schan [join $schan ","]
+      if {[string length $schan]} { /offer $schan }
+      set xdcctime 0 
+    }
+  }
+}
+
+set theme(xdccstart) "\".syntax. \$packs Pack(s) Offered -- Slots \$openslots\\\\\$totalslots\""
+set theme(xdccnote) "\"(xx) `--- \$text\""
+set theme(xdccpack) "\"(#\$number) \[align \"\$getsx\" 5\] (\$sizek)  \$text\""
+set theme(xdccend) "\".syntax. /ctcp \[my_nick\] xdcc send\\\\tsend #n for pack #n\""
+set theme(xdccnotice) "\"\\\[syntax\\\] Now sending you pack #\$packno (( \$packdesc )) which is \$packsizek in \$filecount files...\""
+set theme(xdcctnotice) "\"\\\[syntax\\\] Now sending you pack #\$packno (( \$packdesc )) which is \$packsizek in \$filecount files via TDCC...\""
+
+lappend logevents "{xdcc xdcc.log}"
+
+addconfig autooffer xi 0 dynamicinteger "3-90000" "xDCC Auto Offer Interval" "auto offer interval" sstring "xDCC Section"
+addconfig xdccpass xp off string "*" "xDCC Offer Password" "xdcc offer password" sstring "xDCC Section"
+addconfig xdccslots xs 5 integer "5-50" "xDCC Send Slots" "xdcc send slots" sstring "xDCC Section"
+addconfig xdccoffering xx 1 boolean "" "xDCC Offering" "xdcc offering" sstring "xDCC Section"
+addconfig xdcclog xl 1 boolean "" "xDCC Transfer Log" "xdcc activity log" sstring "xDCC Section"
+
+addhelp "offer" "xDCC Offer" "/offer \[destination\]" "None" "Offers a your current xdcc packs to \[destination\]. If \[destination\] is omitted, it offers the pack list to the current channel or query." "Syntax"
+addhelp "xdcc" "xDCC Pack Modification" "/xdcc \[switch\] \[arg1\] \[args\]" "None" "Modifies your xdcc packs. If no switches are specified, you will see an echo of your current xdcc packlist. The following \[switch\]es are valid... ; ; %bADD\\OFFER%b -- Adds the file \[arg1\] to your offerlist. \[args\] are treated as the pack description. ; %bDEL%b   -- Removes pack number \[arg1\] from your packlist. ; %bDESC%b      -- Sets the description for pack \[arg1\] to \[args\]. ; %bPASS%b      -- Sets your xdcc password to \[arg1\]. ; %bFILE%b      -- Sets the xdcc file for pack \[arg1\] to \[args\]. ; %bNOTE%b      -- Adds a the note \[args\] to pack number \[arg1\]. ; %bSEND%b      -- Sends pack number \[arg1\] to \[args\]. ; %bSW\\SWITCH%b -- Moves pack number \[arg1\] to position \[args\]. ; %bSTAT%b      -- Shows xdcc get statistics. ; %bON\\OFF%b    -- Toggles XDcc offering on and off. ; %bLOG%b       -- Opens your xdcc log with default editor. ; %bSAVE%b      -- Saves your current offerlist to \[arg1\] with \[args\] as a description. ; %bLOAD%b      -- Loads an xdcc packlist from \[arg1\]. ; " "Syntax"
+
+if {[config xdcclog]} { checkfile logs/xdcc.log }
+
+#addhelp tog:
+#%bxi%b -- The interval(in seconds) for your xdcc auto offer. Set to 'off' to disable.
+#%bxp%b -- Sets a password for your XDcc file offer.
+#%bxx%b -- Toggles XDcc offering on or off.
+#%bxo%b -- Sets the channels to xdcc auto offer.
+#%bxs%b -- Sets the number of XDcc requests that can be going at the same time.
+#%bxl%b -- Toggles xdcc logging on or off.
+#%bX%bDCC   -- Ignores all xdcc requests from the user.

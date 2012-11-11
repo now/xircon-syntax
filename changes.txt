@@ -1,0 +1,24 @@
+SyntaxIRC Versions File
+----------------------- --
+
+(final - one)
+
+- Cleaned up a lot!@
+- New theme sections (15 or so)
+- Loadecho is nicer looking (loads themes first now)
+- Fixed timer bug
+- Fixed cmode bug
+- Added DCC stats upon completion of a send
+- Added specifiable nick complete characters
+- New addon format (fits in with the themes)
+   (additionally, addons in your root xircon directory and /addons directory are
+    autoloaded if they end with a .syn extension, this elminates /tog dd)
+- Removed tog dd (not needed)
+- Fixed dynamic string tog bug
+- New theme sections added (old themes will still work)
+- Redid logic with theme loading
+- Cleaned up msging routines
+- Added 5 dumb aliases (cq, snt, nt, ccq, svn)
+- Did a new version style
+- Ig\Not has a new look
+- Ignored dalnet vanitry numerics (dalnet == lame)

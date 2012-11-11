@@ -1,0 +1,76 @@
+@define@ syntax datafile
+@create@ 07/01/00 at 12:53:36am
+autokickmenu 1
+whoactive 1
+poppass none
+whoisactive 1
+offerchans none
+defbackqo {generic back msg}
+clearrelaytext 1
+gainops 1
+querywindows 1
+switchtab 1
+arcon 1
+themefile syntax/themes/synecho.thm
+hideigctcp 0
+autograb 1
+poplogon none
+autorejoin 0
+dccmove 1
+xdccfloodlines 3
+autonickc 1
+tabbuffer 6
+awaypager 1
+defum +iwsk
+operuser none
+jpqstatus 0
+awayintr 0
+identd syntax
+antiidle 30
+autodecrypt 1
+notifyactive 0
+wordhilight none
+ctcprepactive 1
+activelinklooker 1
+opervision 0
+editor notepad.exe
+awaynick none
+awaymessagelog 1
+ctcpfloodlines 3
+joinialupdate 1
+cryptkey 12345
+autoaway 0
+regnick none
+operpass none
+closeonquit 1
+bansinactive 0
+selfbanprot 1
+wallformat 1
+relayslots 6
+xdccfloodtime 12
+personallog 1
+masskickqo MassKicK
+operserv none
+operkillactive 0
+joncon 0
+servervision 0
+userlog 1
+maxfloodtime 15
+defawayqo {generic away msg}
+massfriendprot 1
+viewkills 1
+dispmotd 0
+maxfloodlines 5
+joinstats 1
+xwallnicks none
+killignorenicks NickServ
+autojoin {#winprog #winprog.se #linux.nu #linux.se #xircon #bookwarez}
+nickcompchar :
+clonekickqo CloneKicK
+clearscore 1
+ctcpfloodtime 12
+awaynickchange 0
+version {syntax(one\10.06.97) - abyss}
+popserver none
+awaynickcapt 1
+backonkey 0

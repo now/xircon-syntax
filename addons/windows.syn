@@ -1,0 +1,107 @@
+@define@ syntax extension
+#--------pcppopper's window script--------#
+
+####
+#### Alias Commands
+####
+
+alias win {
+  set a [lindex [args] 0]
+  if {![llength [args]]} {
+    synecho win "[eheader "Win"] There are [llength [win_list]] windows and you are on \#[currwin]" ; complete ; return
+  }
+  if {$a  >= [llength [win_list]]} {
+    synecho win "[eheader "Win"] There aren't [b]$a+1[b] (0-based) windows...only [b][allwin][b] available..." ; complete ; return
+  }
+  catch { eval win_focus [lindex [win_list] $a] }
+  killpipe win
+  complete
+}
+
+alias winc {
+  if { [window_type] == "status" } {
+    synecho winc "[eheader "WinC"] Can't close Status Window..."
+  } else {
+    window close [window_type] [window_name]
+  }
+  killpipe winc
+  complete
+}
+
+alias cq {
+  if {"[lindex [args] 0]" == "?"} { /help cq ; complete ; return }
+  if {![string length [queries]]} {
+    synecho cq "[eheader "CloseQueries"] No query windows open..."
+  } else {
+    foreach q [queries] {
+      window close query $q
+    }
+  }
+  killpipe cq
+  complete
+  noidle
+}
+
+####
+#### Procedures
+####
+
+proc currwin { } {
+  if {[window_type] == "status"} { return 0 }
+  set a 0
+  foreach wn [win_list] {
+    incr a
+    if {[lindex $wn 1] == [window_name]} {return [expr $a - 1] }
+  }
+}
+
+proc win_focus {type {name {}}} {
+    if {[window state $type $name] == "minimize"} {
+    set new [window state [window type] [window name]]
+    window [expr {$new == "minimize" ? "restore" : $new}] $type $name
+    }
+    window focus $type $name
+}
+
+proc win_list {} {
+    set x [list [list status {}]]
+    foreach i [channels] {lappend x [list channel [string tolower $i]]}
+    foreach i [queries] {lappend x [list query [string tolower $i]]}
+    foreach i [chats] {lappend x [list chat [string tolower $i]]}
+    set x
+}
+
+proc win_set num {catch {eval win_focus [lindex [win_list] [expr {$num-1}]]}}
+
+proc win_index {type name} {
+    set type [string tolower $type]
+    set name [expr {$type == "status" ? "" : [string tolower $name]}]
+    expr {[lsearch -exact [win_list] [list $type $name]]+1}
+}
+
+proc win_chg { {int 1} } {
+  set index [win_index [window_type] [window_name]]
+  set n [expr {((($index+$int)-1)%[llength [win_list]])+1}]
+  win_set $n
+}
+
+####
+#### Hotkeys
+####
+
+hotkey alt+left {
+  win_chg -1
+}
+
+hotkey alt+right {
+  win_chg
+}
+
+alias op { echo tuuuut }
+####
+#### Additional Stuff
+####
+
+addhelp "win" "Activate Window \#" "/win \[number\]" "None" "Activate Window \#\[number\]." "Windows"
+addhelp "winc" "Close Window" "/winc" "None" "Close active window." "Windows"
+addhelp "cq" "Close Querys" "/cq" "None" "Closes all query windows." "Windows"

@@ -1,0 +1,71 @@
+@define@ syntax extension
+#--------syntax ripped popup definitions--------#
+
+####
+#### Popups
+####
+
+menu users "*&query"                 { foreach i [args] { /query $i } }
+menu users "&whois++"                { foreach i [args] { /wii $i } }
+menu users "dns &lookup"             { foreach i [args] { /nslookup $i } }
+menu users ""
+menu users "&control->&op"               { /op [join [args]] }
+menu users "&control->&deop"             { /deop [join [args]] }
+menu users "&control->"
+menu users "&control->&voice"            { /voice [join [args]] }
+menu users "&control->&unvoice"          { /unvoice [join [args]] }
+menu users "&control->"
+menu users "&control->&4-op"             { /4op [join [args]] }
+menu users "&control->4&-deop"           { /4deop [join [args]] }
+menu users "data&base->&remove"          { /ruser [lindex [args] 0] }
+menu users "data&base->"
+menu users "data&base->auto&op"          { /user [lindex [args] 0] [channel] +o }
+menu users "data&base->auto&deop"        { /user [lindex [args] 0] [channel] +d }
+menu users "data&base->auto&kick"        { /user [lindex [args] 0] [channel] +b }
+menu users "data&base->auto&voice"       { /user [lindex [args] 0] [channel] +v }
+menu users "data&base->"
+menu users "data&base->&protect"         { /user [lindex [args] 0] [channel] +1 }
+menu users "data&base->kick p&rotect"    { /user [lindex [args] 0] [channel] +2 }
+menu users "data&base->kick&ban protect" { /user [lindex [args] 0] [channel] +3 }
+menu users "data&base->"
+menu users "data&base->&autoop protect"  { /user [lindex [args] 0] [channel] +o1 }
+menu users "data&base->"
+menu users "data&base->bo&top" {
+  set x [prompt "BotOps" "Please enter <op-string> and <password>"]
+  if { [string length $x] } {
+    /user [lindex [args] 0] [channel] +p $x
+  }
+}
+menu users "&ignore->&unignore"           { /unignore [lindex [args] 0] }
+menu users "&ignore->"
+menu users "&ignore->ignore &ctcps"       { /ignore [lindex [args] 0] +c }
+menu users "&ignore->ignore &xdccs"       { /ignore [lindex [args] 0] +x }
+menu users "&ignore->ignore &dccs"        { /ignore [lindex [args] 0] +d }
+menu users "&ignore->ignore &invites"     { /ignore [lindex [args] 0] +i }
+menu users "&ignore->ignore &privmsgs"    { /ignore [lindex [args] 0] +t }
+menu users "&ignore->ignore pu&blic"      { /ignore [lindex [args] 0] +p }
+menu users "&ignore->ignore &other"       { /ignore [lindex [args] 0] +o }
+menu users "&ignore->ignore &all"         { /ignore [lindex [args] 0] +optidxc }
+menu users "c&tcp->&ping"                 { /ping [join [args] ","] }
+menu users "c&tcp->&version"              { /version [join [args] ","] }
+menu users "c&tcp->&clientinfo"           { /ctcp [join [args] ","] clientinfo }
+menu users "&dcc->&send"                  { /dcc send [lindex [args] 0] }
+menu users "&dcc->&chat"                  { /dcc chat [lindex [args] 0] }
+menu users "&dcc->&get"                   { /dcc get [lindex [args] 0] }
+menu users "&kicks->&kick"                { /k [join [args] ","] }
+menu users "&kicks->kick&ban"             { /kb [join [args] ","] }
+menu users "&kicks->kick&domainban"       { /dkb [join [args] ","] }
+
+menu query "*&whois++"                    { /wii [join [args]] }
+menu query "dns &lookup"                  { /nslookup [join [args]] }
+menu query "&ctcp->&ping"                 { /ping [join [args]] }
+menu query "&ctcp->&version"              { /version [join [args]] }
+menu query "&ctcp->&time"                 { /ctcp [join [args]] time }
+menu query "&dcc->&send"                  { /dcc send [join [args]] }
+menu query "&dcc->&chat"                  { /dcc chat [join [args]] }
+menu query "&dcc->&get"                   { /dcc get [join [args]] }
+
+menu channel "*channel &information"      { show_props channel [join [args]] }
+menu channel "channel &stats"             { /cs [join [args]] }
+menu channel "c&ycle channel"             { /cycle [join [args]] }
+menu channel "request &botops"            { /bo [join [args]] }

@@ -1,0 +1,69 @@
+@define@ syntax extension
+#--------pcppopper's botops script--------#
+
+# It should be noted that it uses syntax internal address list and user system for botkeeping
+
+
+####
+#### Alias Commands
+####
+
+alias bo {
+  if { [lindex [args] 0] == "?" } { /help bo ; complete ; return }
+  set chan [lindex [args] 0]
+  if { $chan == "" } { set chan [channel] }
+  foreach nick [clist +o $chan] {
+    set nick [string tolower $nick]
+    if { [llength [array names mask $nick]] >= 1 } {
+      if { [string length $mask($nick)] } {
+        set host $mask($nick)
+        regexp -- {([^!]+)!([~]?)([^@]+)@(.+)} $host match nick ident user hname
+        set parts [split $hname .]
+        if { [llength $parts] != 2 } {
+          set parts "*.[join [lrange $parts [expr [llength $parts] - 2] end] .]"
+        } else {
+          set parts "[join $parts .]"
+        } 
+        set host "*!*$user@$parts"
+        if { [isuser $host] } {
+          set userinfo [usersettings $host $chan]
+          if { [string match *p* [lindex $userinfo 1]] } {
+            synechox bo "[dbullet] [eheader BotOps] Asking [b]$nick[b] for ops on [b]$chan[b]..."
+            /msg $nick [lindex [lindex $userinfo 2] 0] [lindex [lindex $userinfo 2] 1]
+          }
+        }
+      }
+    }
+  }
+  killpipe bo
+  complete
+}
+
+####
+#### Events
+####
+
+on mode-o {
+  if { [lindex [args] 1] == [my_nick] && [nick] != [my_nick] } {
+    /bo
+  }
+  complete
+}
+
+on 329 {
+  set chan [lindex [args] 1]
+  set nick [my_nick]
+
+  if { ![isop $nick $chan] && [ison $nick $chan] } {
+    /bo $chan
+  }
+  complete
+}
+
+####
+#### Additional
+####
+
+append ustring "p"
+
+addhelp "bo" "BotOps" "/bo \[channel\]" "None" "Requests BotOps from active bots in specified channel or active channel if no args are passed. Requires that the IAL (Internal Address List) is being updated on channel joins (see /config), and it can be configured with /user and /chattr. Setting a users flags to %bp%b and comment to \"<op-string> <password>\" sets the user to a legal %bOpBot%b." "Bots"

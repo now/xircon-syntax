@@ -1,0 +1,80 @@
+@define@ syntax extension
+#--------syntax email checker script--------#
+
+####
+#### Email check
+####
+
+proc killesock { y } {
+  global emailstage env
+  if {[info exists emailstage]} { unset emailstage }
+  if {[string length [get_cookie emsockblock]]} { set_cookie emsockblock "" }
+  catch {close $y}
+}
+proc emailsock { x } {
+  global emailstage
+  if {[eof $x]} { killesock $x ; return }
+  if {[catch {gets $x} text]} { killesock $x ; return }
+  if {![string length $text]} { killesock $x ; return }
+  if {[lindex $text 0] != "+OK"} {
+    synecho x "[eheader "Notice"] EMail server logon failure..."
+    if {[catch {puts $x "quit"}]} { killesock $x }
+    killesock $x
+  } elseif {$emailstage == 1} {
+  } elseif {$emailstage == 2} {
+    if {[catch {puts $x "pass [config poppass]"}]} { killesock $x }
+  } elseif {$emailstage == 3} {
+    if {[catch {puts $x "stat"}]} { killesock $x }
+  } elseif {$emailstage == 4} {
+    if {[lindex $text 1] > [get_cookie lastmessages 0]} { 
+      synecho x "[eheader "Notice"] You have ([sb]new:[sb] [expr [lindex $text 1] - [get_cookie lastmessages 0]])([sb]total:[sb] [lindex $text 1]) new mail messages..." 
+    }
+    set_cookie lastmessages "[lindex $text 1]"
+    if {[catch {puts $x "quit"}]} { killesock $x }
+  } elseif {$emailstage == 5} {
+    killesock $x
+  }
+  incr emailstage
+  if {[catch {flush $x}]} { killesock $x ; return }
+}
+proc emailcheck { } {
+  global emailstage
+  if {![string length [get_cookie emsockblock]] && [config poplogon] != "none" && [config poppass] != "none" && [config popserver] != "none" && [config popinterval]} {
+    if {![catch {socket -async [config popserver] 110} buf]} {
+      set_cookie emsockblock "$buf" 
+      if {![catch {puts $buf "user [config poplogon]"}]} {
+        if ![catch {flush $buf}] {
+          set emailstage 1
+          fconfigure $buf -buffering line
+          fileevent $buf readable "emailsock $buf"
+        } else {
+          synecho x "[eheader "Notice"] Socket error in connection with ([b][config popserver][b])... Aborting..."
+          killesock $buf
+        }
+      } else {
+        synecho x "[eheader "Notice"] Socket error in connection with ([b][config popserver][b])... Aborting..."
+        killesock $buf
+      }
+    } else {
+      synecho x "[eheader "Notice"] Server connection error with ([b][config popserver][b])..."
+    }
+  }
+}
+
+on TIMER {
+  if { [connected] } {
+    if {![info exists popintr]} { set popintr 0 }
+    if {[config popinterval]} { 
+      incr popintr
+      if {$popintr >= [config popinterval]} { set popintr 0 ; emailcheck }
+    }
+  }
+}
+
+alias mystat {
+  if {[config poplogon] != "none" && [config poppass] != "none" && [config popserver] != "none" && [config popinterval]} { synecho mystat "[boxside "[eheader "email      "] [b][get_cookie lastmessages 0][b] messages"]" }
+  killpipe mystat
+  complete
+}
+
+addconfig popinterval pi 0 dynamicinteger "60-90000" "EMail Check Interval" "email check interval" sstring "Toggles Section"

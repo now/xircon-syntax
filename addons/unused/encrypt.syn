@@ -1,0 +1,140 @@
+@define@ syntax extension
+#--------syntax encryption script--------#
+
+####
+#### Encryption
+####
+
+proc encrypt { string } {
+  if {[config cryptkey]} { return "[xencrypt "$string" "[config cryptkey]"]" 
+  } else { return "[xencrypt "$string" "12345"]" }
+}
+proc decrypt { string } {
+  if {[config cryptkey]} { return "[xdecrypt "$string" "[config cryptkey]"]" 
+  } else { return "[xdecrypt "$string" "12345"]" }
+}
+proc xencrypt { string key } {
+  set final ""
+  set fin ""
+  set randalso "[random 10 99]"
+  foreach c [split $string ""] { 
+    set d "[toascii [tochar [expr [expr [toascii $c] - $randalso] - $key]]]"
+    if {$d == "13" || $d == "10" || $d == "9" || $d == "256"} { append final "x[tochar [expr [expr [toascii $c] + $randalso] + $key]]" 
+    } else { append final "[randshit 1][tochar $d]" }
+  }
+  foreach xx [split $randalso ""] { append fin "[lindex "Ô Î Ë É õ ü ¼ Ü • Œ …" $xx]" }
+  return "[join [revorder [split "[randshit 5]$final[randshit 5]${fin}õ[randshit 3]" ""]] ""]"
+}
+proc xdecrypt { string key } {
+  set fin ""
+  set final ""
+  set slen "[string length $string]"
+  set string "[join [revorder [split "$string" ""]] ""]]"
+  set numbb "[string range $string [expr $slen - 6] [expr $slen - 5]]"
+  set string "[string range $string 11 [expr $slen - 12]]"
+  foreach xx [split $numbb ""] { append fin "[lsearch -exact "Ô Î Ë É õ ü ¼ Ü • Œ …" $xx]" }
+  foreach c [split $string ""] { 
+    if {[info exists chr]} {
+      if {"[string range $chr 0 0]" == "x"} {
+        if {[toascii $c] == 256} { 
+          set xx "[expr [expr [expr [toascii $c] - $fin] - $key] + 32]"
+        } else { 
+          set xx "[expr [expr [toascii $c] - $fin] - $key]"
+        }
+        set xx "[toascii [tochar $xx]]"
+        if {$xx != 13 && $xx != 10 && $xx != 9} { append final "[tochar $xx]" }
+      } else {
+        if {[toascii $c] == 256} { 
+          set xx "[expr [expr [expr [toascii $c] + $fin] + $key] + 32]"
+        } else { 
+          set xx "[expr [expr [toascii $c] + $fin] + $key]"
+        }
+        set xx "[toascii [tochar $xx]]"
+        if {$xx != 13 && $xx != 10 && $xx != 9} { append final "[tochar $xx]" }
+      }
+      unset chr
+    } else {
+      set chr "$c"
+    }
+  }
+  if {[info exists chr]} { unset chr }
+  return "$final"
+}
+proc isencrypted { string } {
+  if {[string length $string] < 20 || "[string range $string 3 3]" != "õ"} { return 0 }
+  set string "[join [revorder [split "$string" ""]] ""]]"
+  if {"[string range $string 0 5]" != ""} { return 0 }
+  set slen "[string length $string]"
+  set numbb "[string range $string [expr $slen - 6] [expr $slen - 5]]"
+  set string "[string range $string 11 [expr $slen - 11]]"
+  if {![string length $string]} { return 0 }
+  foreach x [split $numbb ""] { if {![isin "Ô Î Ë É õ ü ¼ Ü • Œ …" $x]} { return 0 } }
+  return 1
+}
+
+alias crypt {
+  set x [random 100 999]
+  if {"[window_type]" == "query"} {
+    echo "[applydecryptedselftext "[my_nick]" "[join [args]]"]" query [window_name]
+    /quote PRIVMSG [window_name] :[encrypt [join [args]]]
+  } elseif {"[window_type]" == "channel"} {
+    echo "[applydecryptedselftext "[my_nick]" "[join [args]]"]" channel [window_name]
+    /quote PRIVMSG [window_name] :[encrypt [join [args]]]
+  } else { 
+    synecho crypt "[eheader "Crypt"] Invalid destination specified..."
+  }
+  noidle
+  killpipe crypt
+  complete
+}
+alias cryptmsg { if {"[lindex [args] 0]" == "?"} { /help cryptmsg ; complete ; return } ; if {![string length [join [lrange [args] 0 0]]]} { synecho cryptmsg "[eheader "cryptmsg"] No arguments specified..." } elseif {![string length [join [lrange [args] 1 1]]]} { synecho cryptmsg "[eheader "cryptmsg"] No text to send..." } else { set x [random 100 999] ; echo "[applyscryptedmsgstyle "[join [lrange [args] 0 0]]" "[join [lrange [args] 1 end]]"]" ; spylink [lindex [args] 0] "[applyscryptedmsgstyle "[join [lrange [args] 0 0]]" "[join [lrange [args] 1 end]]"]" ; /quote PRIVMSG [join [lrange [args] 0 0]] :[encrypt [join [lrange [args] 1 end]]] } ; noidle ; killpipe cryptmsg ; complete }
+
+on PRIVMSG {
+  if {![string match "#*" [lindex [args] 0]]} {
+    if {!$hide} {
+      set text "[join [lrange [args] 1 end]]"
+      if {![config querywindows]} { 
+        if {[config autodecrypt] && [isencrypted $text]} {
+          if {[window_type] != "status"} { echo "[applydecryptedmsgstyle "[nick]" "[user]" "[host]" "[decrypt $text]"]" }
+          echo "[applydecryptedmsgstyle "[nick]" "[user]" "[host]" "[decrypt $text]"]" status
+          spylink [nick] "[applydecryptedmsgstyle "[nick]" "[user]" "[host]" "[decrypt $text]"]"
+        } else {
+          if {[window_type] != "status"} { echo "[applymsgstyle "[nick]" "[user]" "[host]" "[join [lrange [args] 1 end]]"]" }
+          echo "[applymsgstyle "[nick]" "[user]" "[host]" "[join [lrange [args] 1 end]]"]" status
+          spylink [nick] "[applymsgstyle "[nick]" "[user]" "[host]" "[join [lrange [args] 1 end]]"]"
+        }
+      } else {
+        if {[config autodecrypt] && [isencrypted $text]} {
+          if {![string length [queries [nick]]]} { /query "[nick]" min }
+          echo "[applydecryptedusertext "[nick]" "[decrypt $text]"]" query [nick]
+          spylink [nick] "[applydecryptedusertext "[nick]" "[decrypt $text]"]"
+        } else {
+          if {![string length [queries [nick]]]} { /query "[nick]" min }
+          echo "[applymsgusertext "[nick]" "$text"]" query [nick]
+          spylink [nick] "[applymsgusertext "[nick]" "$text"]"
+        }
+      }
+      inc_relm "[nick]" "[user]" "[host]" "msg" "[join [lrange [args] 1 end]]"
+      inc_tab "msg" "[nick]"
+    } else { complete }
+  } else {
+    set mask([string tolower [nick]]) "[nick]![user]@[host]"
+    if {![isin [ignorez [nick]![user]@[host]] "public"]} {
+      set text [join [lrange [args] 1 end]]
+      if {[config autodecrypt] && [isencrypted $text]} {
+        echo "[applydecryptedusertext "[nick]" "[decrypt $text]"]" channel [lindex [args] 0]
+        spylink [lindex [args] 0] "[applydecryptedusertext "[nick]" "[decrypt $text]"]"
+      }
+    }
+  }
+}
+
+proc applydecryptedselftext { nick text } { global theme ; return "[eval "return $theme(decryptedslftext)"]" }
+proc applydecryptedusertext { nick text } { global theme ; return "[eval "return $theme(decryptedusrtext)"]" }
+proc applydecryptedmsgstyle { nick user host text } { global theme ; return "[eval "return $theme(decryptedmsg)"]" }
+proc applyscryptedmsgstyle { nick text } { global theme ; return "[eval "return $theme(scryptedmsgstyle)"]" }
+
+addconfig cryptkey ck "12345" integer "1-99999" "Encryption Key" "encryption key" sstring "Toggles Section"
+addconfig autodecrypt cr 1 boolean "" "Auto Decryption" "automatic text decryption" sstring "Toggles Section"
+addhelp "cryptmsg" "Send Encrypted Message" "/cryptmsg <targ> <text>" "None" "Encrypts <text> and sends it in a message to <targ>." "Syntax"
+addhelp "crypt" "Encryption" "/crypt <text>" "None" "Sends an encrypted string based on <text> to the current window." "Syntax"

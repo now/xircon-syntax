@@ -1,0 +1,504 @@
+@define@ syntax extension
+#--------syntax ripped clone script--------#
+
+####
+#### Global Variables
+####
+
+set bott ""
+set sox ""
+
+####
+#### Alias Commands
+####
+
+alias cflood {
+  if {"[lindex [args] 0]" == "?"} { /help cflood ; complete ; return }
+  if {![llength $sox]} { synecho cflood "[eheader "Clone"] You have no clones loaded..."
+  } elseif {![string length [lindex [args] 0]]} { synecho cflood "[eheader "Clone"] You must specify a location for the ctcp..."
+  } elseif {![isnum [lindex [args] 1]]} { synecho cflood "[eheader "Clone"] You must specify a number of ctcps to send..."
+  } elseif {![string length [lindex [args] 2]]} { synecho cflood "[eheader "Clone"] You must specify a ctcp to send..."
+  } elseif {[isnick [lindex [args] 0]]} { 
+    if {![info exists whoisqueue]} { set whoisqueue "" }
+    lappend whoisqueue "cflood [list "[lindex [args] 1]"] [list "[lindex [args] 2]"] [list "[join [lrange [args] 3 end]]"]"
+    set nokill 1
+    addnullpipe whois
+    whois [lindex [args] 0]
+  } else {
+    synecho cflood "[eheader "Clone"] Invalid nickname given..."
+  }
+  if {[info exists nokill]} { unset nokill
+  } else { killpipe cflood }
+  noidle
+  complete
+}
+alias cctcp {
+  if {"[lindex [args] 0]" == "?"} { /help cctcp ; complete ; return }
+  if {![llength $sox]} { synecho cctcp "[eheader "Clone"] You have no clones loaded..."
+  } elseif {![string length [lindex [args] 0]]} { synecho cctcp "[eheader "Clone"] You must specify a location for the ctcp..."
+  } elseif {![string length [lindex [args] 1]]} { synecho cctcp "[eheader "Clone"] You must specify a ctcp to send..."
+  } else { 
+    synecho cctcp "[eheader "Clone"] Clones ctcping ([b][lindex [args] 0][b]) with: [b]([lindex [args] 1]) [join [lrange [args] 2 end]][b]"
+    foreach sock $sox { if {[catch {puts $sock "PRIVMSG [lindex [args] 0] :\001[join [lrange [args] 1 end]]\001"}]} { killsock $sock } } 
+  }
+  killpipe cctcp
+  noidle
+  complete
+}
+alias cdump {
+  if {"[lindex [args] 0]" == "?"} { /help cdump ; complete ; return }
+  if {![llength $sox]} { synecho cdump "[eheader "Clone"] You have no clones loaded..."
+  } elseif {![string length [lindex [args] 0]]} { synecho cctcp "[eheader "Clone"] No text to dump..."
+  } else { 
+    synecho cdump "[eheader "Clone"] Dumping text to clones: ([b][join [args]][b])"
+    foreach sock $sox { if {[catch {puts $sock "[join [args]]"}]} { killsock $sock } } 
+  }
+  killpipe cdump
+  noidle
+  complete
+}
+alias cmsg {
+  if {"[lindex [args] 0]" == "?"} { /help cmsg ; complete ; return }
+  if {![llength $sox]} { synecho cmsg "[eheader "Clone"] You have no clones loaded..."
+  } elseif {![string length [lindex [args] 0]]} { synecho cmsg "[eheader "Clone"] You must specify a location for the message..."
+  } elseif {![string length [lindex [args] 1]]} { synecho cmsg "[eheader "Clone"] You must specify a message to snd..."
+  } else { 
+    synecho cmsg "[eheader "Clone"] Clones messaging ([b][lindex [args] 0][b]) with: [b][join [lrange [args] 1 end]][b]"
+    foreach sock $sox { if {[catch {puts $sock "PRIVMSG [lindex [args] 0] :[join [lrange [args] 1 end]]"}]} { killsock $sock } } 
+  }
+  killpipe cmsg
+  noidle
+  complete
+}
+alias cnick {
+  if {"[lindex [args] 0]" == "?"} { /help cnick ; complete ; return }
+  if {![string length [lindex [args] 0]]} { set nick "syn\[%n\]"
+  } else { set nick [lindex [args] 0] }
+  if {![llength $sox]} { synecho cnick "[eheader "Clone"] You have no clones loaded..."
+  } else {
+    if {![wmatch *%x* $nick] && ![wmatch *%n* $nick]} { set nick "$nick%x" }
+    synecho cnick "[eheader "Clone"] Clones switching nick to ([b][replace [replace ${nick} "\%n" "\*" ] "\%x" "\*" ][b])..."
+    set numx -1
+    foreach sock $sox { incr numx ; if {[catch {puts $sock "NICK [replace [replace ${nick} "\%n" "[random 1000 9999]"] "\%x" "$numx"]"}]} { killsock $sock } } 
+  }
+  killpipe cnick
+  noidle
+  complete
+}
+alias cjoin {
+  if {"[lindex [args] 0]" == "?"} { /help cjoin ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} { set chan [lindex [args] 0] } else { 
+    if {![validchan [channel]]} { synecho cjoin "[eheader "Clone"] Invalid channel specified..."
+    } else { set chan [channel] }
+  }
+  if {![llength $sox] && [string length $chan]} { synecho cjoin "[eheader "Clone"] You have no clones loaded..."
+  } else { 
+    synecho cjoin "[eheader "Clone"] Clones now joining ([b]$chan[b])..."
+    foreach sock $sox { if {[catch {puts $sock "JOIN $chan"}]} { killsock $sock } } 
+  }
+  killpipe cjoin
+  noidle
+  complete
+}
+alias cpart {
+  if {"[lindex [args] 0]" == "?"} { /help cpart ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} { set chan [lindex [args] 0] } else { 
+    if {![validchan [channel]]} { synecho cpart "[eheader "Clone"] Invalid channel specified..."
+    } else { set chan [channel] }
+  }
+  if {![llength $sox] && [string length $chan]} { synecho cjoin "[eheader "Clone"] You have no clones loaded..."
+  } else { 
+    synecho cpart "[eheader "Clone"] Clones now parting ([b]$chan[b])..."
+    foreach sock $sox { if {[catch {puts $sock "PART $chan"}]} { killsock $sock } } 
+  }
+  killpipe cpart
+  noidle
+  complete
+}
+alias ccycle {
+  if {"[lindex [args] 0]" == "?"} { /help ccycle ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} { set chan [lindex [args] 0] } else { 
+    if {![validchan [channel]]} { synecho ccycle "[eheader "Clone"] Invalid channel specified..."
+    } else { set chan [channel] }
+  }
+  if {![llength $sox] && [string length $chan]} { synecho ccycle "[eheader "Clone"] You have no clones loaded..."
+  } else { 
+    synecho ccycle "[eheader "Clone"] Clones now cycling ([b]$chan[b])..."
+    foreach sock $sox { if {[catch {puts $sock "PART $chan\nJOIN $chan"}]} { killsock $sock } } 
+  }
+  killpipe cpart
+  noidle
+  complete
+}
+alias cquit {
+  if {"[lindex [args] 0]" == "?"} { /help cquit ; complete ; return }
+  if {![llength $sox]} { synecho cquit "[eheader "Clone"] You have no clones loaded..."
+  } else { 
+    if {![string length [lindex [args] 0]]} { set qmsg "uNF uNF" 
+    } else { set qmsg "[join [lrange [args] 0 end]]" }
+    synecho cquit "[eheader "Clone"] Clones now quitting with message ([b]$qmsg[b])..."
+    foreach sock $sox { if {[catch {puts $sock "QUIT :syntax: $qmsg"}]} { killsock $sock } } 
+  }
+  killpipe cquit
+  noidle
+  complete
+}
+alias ckick {
+  if {"[lindex [args] 0]" == "?"} { /help ckick ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} {
+    set chan [lindex [args] 0]
+    if {[isnum [lindex [args] 1]]} { set banlevel [lindex [args] 1] ; set reason [lrange [args] 2 end]
+    } else { set banlevel 5 ; set reason [lrange [args] 1 end] }
+  } else {
+    set chan [channel]
+    if {[isnum [lindex [args] 0]]} { set banlevel [lindex [args] 0] ; set reason [lrange [args] 1 end]
+    } else { set banlevel 5 ; set reason [lrange [args] 0 end] }
+  }
+  if {![validchan $chan]} { synecho ckick "[eheader "CloneKick"] Invalid channel specified..."
+  } else { 
+    set command ""
+    set kickz ""
+    set addrs ""
+    set users ""
+    set rnumb 0
+    if {![string length $reason]} { set reason [split [config clonekickqo]] }
+    foreach user [clist all $chan] { lappend addrs [banmask $banlevel [getmask $user]] ; lappend users $user }
+    foreach user [clist all $chan] {
+      if {[llength [rflist $addrs [banmask $banlevel [getmask $user]]]] < [expr [llength $addrs] - 1]} {
+        set numb 0
+        if {![wmatch [banmask $banlevel [getmask $user]] [my_nick]![my_user]@[my_host]]} {
+          incr rnumb
+          foreach nick $users { if {[wmatch [banmask $banlevel [getmask $nick]] [getmask $user]]} { incr numb ; lappend command "[eheader "CloneKick"] Removing Clone: [sb]([sb][b]$numb[b][sb])[sb] [b][align $nick 10][b] -- [sb][getmask $nick][sb]" ; set users [rflist $users $nick] ; append kickz "$nick," } }
+          set addrs [rflist $addrs [banmask $banlevel [getmask $user]]]
+          skick noban $chan [string trimright $kickz ","] $reason
+        }
+      }
+    }
+    if {[string length $command]} { 
+      foreach line $command { synecho ckick "$line" }
+    } else { synecho ckick "[eheader "CloneKick"] No clones are currently on $chan..." }
+  }
+  killpipe ckick
+  noidle
+  complete 
+}
+alias ckill { if {"[lindex [args] 0]" == "?"} { /help cquit ; complete ; return } ; repipe ckill cquit ; /cquit [join [args]] ; complete }
+alias clone {
+  global env
+  if {"[lindex [args] 0]" == "?"} { /help clone ; complete ; return }
+  set server ""
+  set port ""
+  if {[wmatch *.* [lindex [args] 0]]} {
+    set server [lindex [split [lindex [args] 0] ":"] 0]
+    set port [lindex [split [lindex [args] 0] ":"] 1]
+  } elseif {[isnum [lindex [args] 0]]} {
+    set numb 0
+    foreach serv [get_cookie "servers"] {
+      incr numb
+      if {$numb == [lindex [args] 0]} {
+        set server "[lindex $serv 2]"
+        set port "[lindex $serv 3]"
+        set flag 1
+      }
+    }
+    if {!$numb} { synecho serv "[eheader "Server"] You have no servers on your serverlist..." ; complete ; return
+    } elseif {[info exists flag]} { unset flag 
+    } else { synecho serv "[eheader "Server"] Invalid server number specified..." ; complete ; return }
+  } else {
+    set server [lindex [xserver] 0]
+    if {[isnum [lindex [args] 0]]} { set port [lindex [args] 0]
+    } else { set port "[lindex [xserver] 1]" }
+  }
+  if {[isnum [lindex [args] 1]]} { set count [lindex [args] 1]
+  } else { set count "1" }
+  if {![string length $port]} { set port "6667" }
+  if {[string length $server]} {
+    for { set cc 0 } { $cc < $count } { incr cc 1 } {
+      if {![catch {socket -async $server $port} buf]} {
+        set niq "syn\[[random 1000 9999]\]"
+        if {![catch {puts $buf "NICK :$niq\nUSER x x x :juDo ChOp\@\!\#\$\nMODE $niq +i"}]} {
+          if ![catch {flush $buf}] {
+            set sox [atlist $sox $buf]
+            incr env(rid)
+            synecho clone "[eheader "Clone"] Attempting connection: [b]$niq[b]([sb]#[llength $sox][sb]) [b]-->>[b] [b]$server[b]\[[sb]$port[sb]\]..." status
+            fconfigure $buf -buffering line
+            fileevent $buf readable "clonex $buf"
+          } 
+        }
+      } else {
+        synecho clone "[eheader "Clone"] Server connection error with [b]$server[b]\[[sb]$port[sb]\]..." status
+        break
+      }
+    }
+  } else {
+    synecho clone "[eheader "Clone"] Invalid server specified..." status
+  }
+  killpipe clone
+  noidle 
+  complete
+}
+alias mclone {
+  global env(rid)
+  if {"[lindex [args] 0]" == "?"} { /help mclone ; complete ; return }
+  set servx ""
+  foreach xserv [get_cookie "servers"] { if {[lindex $xserv 0] == [lindex [args] 1]} { lappend servx "$xserv" } }
+  if {![isnum [lindex [args] 0]]} { synecho mclone "[eheader "Clone"] Specify a number of clones to load..." 
+  } elseif {![string length [lindex [args] 1]]} { synecho mclone "[eheader "Clone"] Specify a network to connect the clones to..."
+  } elseif {![string length $xserv]} { synecho mclone "[eheader "Clone"] No servers defined for network..."
+  } else {    
+    synecho mclone "[eheader "Clone"] Attempting to connect [b][lindex [args] 0][b] clone(s) to random [b][lindex [args] 1][b] servers..."
+    for { set x 0 } { $x < [lindex [args] 0] } { incr x } {
+      if {![info exists servindex]} { set servindex 0 
+      } else { incr servindex }
+      if {$servindex >= [llength $servx]} { set servindex 0 }
+      set dserver [lindex [lindex $servx $servindex] 1]
+      set server [lindex [lindex $servx $servindex] 2]
+      set port [lindex [lindex $servx $servindex] 3]
+      if {![catch {socket -async $server $port} buf]} {
+        set niq "syn\[[random 1000 9999]\]"
+        if {![catch {puts $buf "NICK :$niq\nUSER x x x :juDo ChOp\@\!\#\$\nMODE $niq +i"}]} {
+          if ![catch {flush $buf}] {
+            set sox [atlist $sox $buf]
+            incr env(rid)
+            synecho mclone "[eheader "Clone"] Attempting connection: [b]$niq[b]([sb]#[llength $sox][sb]) [b]-->>[b] [b]$dserver[b]\[[sb]$port[sb]\]..." status
+            fconfigure $buf -buffering line
+            fileevent $buf readable "clonex $buf"
+          }
+        }
+      } else {
+        synecho mclone "[eheader "Clone"] Server connection error with [b]$server[b]\[[sb]$port[sb]\]..." status
+      }
+    }
+  }
+  killpipe mclone
+  noidle 
+  complete
+}
+alias whoc {
+  if {![string length $bott]} { synecho whoc "[eheader "CloneReport"] You have no clones loaded..."
+  } else {
+    set numb 0
+    foreach nick $bott {
+      if {!$numb} { 
+        synecho whoc "[boxtop "[b]Clone Report[b] [sb](([sb][su]bots:[su] [b][llength $bott][b][sb]))[sb]"]"
+        synecho whoc "[boxside "[llb][b]# [b][lrb][llb][b]Nickname:  [b][lrb][llb][b]Server:                [b][lrb][llb][b]Channels:                     [b][lrb]"]"
+      }
+      incr numb
+      if {[string length [lindex $nick 4]]} { set chan [align [join [lindex $nick 4]] 30]
+      } else { set chan [align none 30] }
+      synecho whoc "[boxside "[llb][b][align $numb 2][b][lrb][llb][align [lindex $nick 1] 11][lrb][llb][align [lindex $nick 2] 23][lrb][llb]$chan[lrb]"]"
+    }
+    if {!$numb} { synecho whoc "[eheader "CloneReport"] No notified users are currently logged in..." 
+    } else { synecho whoc "[boxbottom "[b]Clone Report[b] [sb](([sb][su]bots:[su] [b][llength $bott][b][sb]))[sb]"]" }
+  }
+  killpipe whoc
+  noidle
+  complete
+}
+alias cmd {
+  if {"[lindex [args] 0]" == "?"} { /help cmd ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} { set chan [lindex [args] 0] ; set pri [lindex [args] 1]
+  } else { set chan [channel] ; set pri [lindex [args] 0] }
+  if {![validchan $chan]} { synecho md "[eheader "CloneMassdeop"] Invalid channel specified..."
+  } else { 
+    set avail ""
+    set nicks [rflist [clist +o $chan] [my_nick]]
+    foreach nick $bott {
+      if {[string match *@[string tolower $chan]* [string tolower [join [lindex $nick 4]]]]} {
+        lappend avail "[lindex $nick 1]"
+        set nicks "[rflist $nicks [lindex $nick 1]]"
+      }
+    }
+    if {[config massfriendprot]} { foreach nick $nicks { if {[isprotected [getmask $nick] $chan]} { set nicks "[rflist $nicks $nick]" } } }
+    if {![string length $avail]} { 
+      synecho md "[eheader "CloneMassdeop"] There are no clones available for a massdeop on [sb]$chan[sb]..."
+    } elseif {![string length $nicks]} { 
+      synecho md "[eheader "CloneMassdeop"] There are no users to deop on [sb]$chan[sb]..."
+    } else {
+      synecho md "[eheader "CloneMassdeop\[[llength $nicks]\]"] Executing massdeop on [sb]$chan[sb]..."
+      set nn "[dividedeops $nicks [llength $avail]]"
+      foreach bottie $avail {
+        set mysection "[lindex $nn 0]"
+        set nn "[lrange $nn 1 end]" 
+        foreach sock $bott {
+          if {[lindex $sock 1] == $bottie} {
+            set deopsec ""
+            foreach nickname $mysection {
+              lappend deopsec "$nickname"
+              if {[llength $deopsec] >= [servmodemax]} {
+                if {[catch {puts [lindex $sock 0] "mode $chan -[replicate "o" [servmodemax]] [join $deopsec " "]"}]} { killsock $sock } 
+                set deopsec ""
+              }
+            }
+            if {[llength $deopsec]} {
+              if {[catch {puts [lindex $sock 0] "mode $chan -[replicate "o" [servmodemax]] [join $deopsec " "]"}]} { killsock $sock } 
+            }
+          }
+        }
+      }
+    }
+  }
+  killpipe cmd
+  noidle
+  complete
+}
+alias cscan {
+  if {"[lindex [args] 0]" == "?"} { /help cscan ; complete ; return }
+  if {[string match "#*" [lindex [args] 0]]} {
+    set chan [lindex [args] 0]
+    if {[isnum [lindex [args] 1]]} { set banlevel [lindex [args] 1]
+    } else { set banlevel 5 }
+  } else {
+    set chan [channel]
+    if {[isnum [lindex [args] 0]]} { set banlevel [lindex [args] 0]
+    } else { set banlevel 5 }
+  }
+  if {![validchan $chan]} { synecho cscan "[eheader "CloneScan"] Invalid channel specified..."
+  } else { 
+    set command ""
+    set addrs ""
+    set users ""
+    set rnumb 0
+    foreach user [clist all $chan] { lappend addrs [banmask $banlevel [getmask $user]] ; lappend users $user }
+    foreach user [clist all $chan] {
+      if {[llength [rflist $addrs [banmask $banlevel [getmask $user]]]] < [expr [llength $addrs] - 1]} {
+        incr rnumb
+        set numb 0
+        lappend command "[boxside "[llb][b][align $rnumb 2][b][lrb] ( [b][expr [llength $addrs] - [llength [rflist $addrs [banmask $banlevel [getmask $user]]]]][b] ) Clients Matching: [sb][banmask $banlevel [getmask $user]][sb]"]"
+        foreach nick $users { if {[wmatch [banmask $banlevel [getmask $nick]] [getmask $user]]} { incr numb ; lappend command "[boxside "[llb]  [lrb]  ([b]$numb[b]) [b][align $nick 10][b] -- [sb][lrange [split [getmask $nick] "!"] 1 end][sb]"]" ; set users [rflist $users $nick] } }
+        set addrs [rflist $addrs [banmask $banlevel [getmask $user]]]
+      }
+    }
+    if {[string length $command]} { 
+      synecho cscan "[boxtop "[b]Clone Scan[b] [sb](([sb][su]clones:[su] [b]$rnumb[b][sb]))[sb]"]"
+      foreach line $command { synecho cscan "$line" }
+      synecho cscan "[boxbottom "[b]Clone Scan[b] [sb](([sb][su]clones:[su] [b]$rnumb[b][sb]))[sb]"]"
+    } else { synecho cscan "[eheader "CloneScan"] No clones are currently on [b]$chan[b]..." }
+  }
+  killpipe cscan
+  noidle
+  complete 
+}
+
+on 312 {
+  if {[info exists cmm]} {
+    global sox
+    foreach sock $sox {
+      for { set count [lindex $cmm 3] } { $count > 0 } { incr count -1 } {
+        if {[catch {puts $sock "PRIVMSG [lindex $cmm 0],[lindex $cmm 1]@[lindex [args] 2],[lindex $cmm 1]%[lindex $cmm 2]@[lindex [args] 2] :\x01[lindex $cmm 4] [join [lrange $cmm 5 end]]\x01"}]} { killsock $sock } 
+      }
+    } 
+  }
+}
+
+proc clonex { x } {
+  global sox bott
+  if {[eof $x]} { killsock $x ; return }
+  if {[catch {gets $x} text]} { killsock $x ; return }
+  if {![string length $text]} { killsock $x ; return }
+  regsub -all {\\} $text {\\\\} text
+  regsub -all {\{} $text {\{} text
+  regsub -all {\}} $text {\}} text
+  regsub -all {\]} $text {\]} text
+  regsub -all {\[} $text {\[} text
+  regsub -all {\"} $text {\"} text
+  set botnick "[lindex [binfo $x] 1]"
+  set effnick [string trimleft [lindex [split [lindex $text 0] "!"] 0] ":"]
+  if {[lindex $text 1] == "001"} {
+    lappend bott "$x [lindex $text 2] [lindex [fconfigure $x -peername] 1] [lindex [fconfigure $x -peername] 2]"
+    synecho x "[eheader "Clone"] Connection established: [b][lindex [split [join $text]] 2][b]([sb]#[llength $bott][sb]) [b]<<-- [lindex [fconfigure $x -peername] 1][b]\[[sb][lindex [fconfigure $x -peername] 2][sb]\]..." status
+  } elseif {[lindex $text 1] == "MODE"} {
+    set mnick [lindex [split [string trimleft [lindex $text 0] ":"] "!"] 0]
+    set chan [string trimleft [lindex $text 2] ":+@"]
+    set mmode [string trimleft [lindex $text 3] ":"]
+    set mtarg [lrange $text 4 end]
+    set mindex 0
+    set mlast ""
+    foreach mode [split $mmode ""] {
+      if {$mode == "+"} { set mlast "+" 
+      } elseif {$mode == "-"} { set mlast "-" 
+      } else {
+        if {$mode == "l" || $mode == "k" || $mode == "v" || $mode == "o" || $mode == "b"} { 
+          set xx [bindex $x]
+          if {$xx > -1} {
+            switch -- "$mlast$mode" {
+              "+o" { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [aotlist [rflist [rflist [lindex [lindex $bott $xx] 4] "$chan"] "+$chan"] "@$chan"]]"] }
+              "-o" { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [aotlist [rflist [rflist [lindex [lindex $bott $xx] 4] "@$chan"] "+$chan"] "$chan"]]"] }
+              "+v" { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [aotlist [rflist [rflist [lindex [lindex $bott $xx] 4] "$chan"] "@$chan"] "+$chan"]]"] }
+              "-v" { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [aotlist [rflist [rflist [lindex [lindex $bott $xx] 4] "@$chan"] "+$chan"] "$chan"]]"] }
+            }
+          }
+          incr mindex 
+        } else {
+          ## reg mode bitz
+        }
+      }
+    }
+  } elseif {[lindex $text 1] == "KICK"} {
+    set chan [string trimleft [lindex $text 2] "+@"]
+    set knick [lindex $text 3]
+    set xx [bindex $x]
+    if {$xx > -1} { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [rflist [rflist [rflist [lindex [lindex $bott $xx] 4] "$chan"] "@$chan"] "+$chan"]]"] }
+  } elseif {[lindex $text 1] == "PART" && $botnick == $effnick} {
+    set jnick [string trimleft [lindex [split [lindex $text 0] "!"] 0] ":"]
+    set chan [string trimleft [lindex $text 2] ":+@"]
+    set xx [bindex $x]
+    if {$xx > -1} { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [rflist [rflist [rflist [lindex [lindex $bott $xx] 4] "$chan"] "@$chan"] "+$chan"]]"] }
+  } elseif {[lindex $text 1] == "JOIN" && $botnick == $effnick} {
+    set jnick [string trimleft [lindex [split [lindex $text 0] "!"] 0] ":"]
+    set chan [string trimleft [lindex $text 2] ":+@"]
+    set xx [bindex $x]
+    if {$xx > -1} { set bott [lreplace $bott $xx $xx "[lrange [lindex $bott $xx] 0 3] [list [atlist [lindex [lindex $bott $xx] 4] $chan]]"] }
+  } elseif {[lindex $text 1] == "NICK" && $botnick == $effnick} {
+    set oldnick [string trimleft [lindex [split [lindex $text 0] "!"] 0] ":"]
+    set newnick [string trimleft [lindex $text 2] ":"]
+    set xx [bindex $x]
+    if {$xx > -1} { set bott [lreplace $bott $xx $xx "[list $x] [list $newnick] [lrange [lindex $bott $xx] 2 end]"] }
+  } elseif {[lindex $text 0] == "PING"} {
+    if {[catch {puts $x "PONG [lrange $text 1 end]"}]} { killsock $x ; return }
+  } elseif {[lindex $text 0] == "ERROR"} {
+    synecho x "[eheader "Clone"] [b]$botnick[b]([sb]#[llength $sox][sb]) disconnected from [b][lindex [fconfigure $x -peername] 1][b]\[[sb][lindex [fconfigure $x -peername] 2][sb]\] [join [lrange $text 4 end]]..." status
+    set xx [bindex $x]
+    if {$xx > -1} { set bott [lreplace $bott $xx $xx] }
+    killsock $x
+  }
+  if {[catch {flush $x}]} { killsock $x }
+  return
+}
+proc killsock { y } {
+  global sox bott
+  set sox [rflist $sox $y]
+  set xx [bindex $y]
+  if {$xx > -1} { set bott [lreplace $bott $xx $xx] }
+  catch {close $y}
+}
+proc bindex { 1 } { 
+  global bott
+  set index 0
+  foreach str $bott { 
+    if {[lindex $str 0] == "$1"} { return $index }
+    incr index
+  }
+  return -1 
+}
+proc binfo { 1 } { 
+  global bott
+  foreach str $bott { 
+    if {[lindex $str 0] == "$1"} { return $str }
+  }
+  return -1 
+}
+
+addhelp "clone" "Clone Creation" "/clone <server>:\[port\] \[number\]" "None" "Creates the given number of clones on the specified server. If no server is given, the command will use your current server. If no port is given, the command will use 6667. Valid clone handling commands are as follows... ; ; %bcctcp %b -- Makes your clones ctcp another user. ; %bccycle%b -- Makes your clones quickly join\\part a given channel. ; %bcmsg  %b -- Make your clones message another user\\channel. ; %bcnick %b -- Change your clones nicknames. ; %bcquit %b -- makes your clones logout. ; %bcjoin %b -- Makes your clones join the given channel. ; %bcpart %b -- Makes your clones part the given channel. ; %bcdump %b -- Dumps raw commands to the clones. " "Clone"
+addhelp "mclone" "Mass Clone Creation" "/mclone <number> <network>" "None" "Loads <number> clones onto random servers on <network>. Networks may be defined by using the /serv function." "Clone"
+addhelp "cctcp" "Clone Control" "/cctcp <nick> <request>" "None" "Makes your clones CTCP the given nickname with <text>." "Clone"
+addhelp "cmsg" "Clone Control" "/cmsg <nick> <text>" "None" "Makes your clones message the given nickname with <text>." "Clone"
+addhelp "ccycle" "Clone Control" "/ccycle \[channel\]" "None" "Makes your clones cycle the given channel. The active channel is used as a default" "Clone"
+addhelp "cquit" "Clone Control" "/cquit \[message\]" "None" "Makes your clones quit with the given message." "Clone"
+addhelp "cpart" "Clone Control" "/cpart \[channel\]" "None" "Makes your clones part the specified channel. If \[channel\] is omitted, the command defaults to the active channel." "Clone"
+addhelp "cjoin" "Clone Control" "/cjoin \[channel\]" "None" "Makes your clones join the specified channel. If \[channel\] is omitted, the command defaults to the active channel." "Clone"
+addhelp "cdump" "Clone Control" "/cdump <text>" "None" "Dumps the given text to your clonebots." "Clone"
+addhelp "cnick" "Clone Control" "/cnick \[nick\]" "None" "Changed your clone's nicks to an array of nicks fromed from <nick>. %n represents a random number from 1000 to 9999. %x represents a sequential number based on the number of clones loaded." "Clone"
+addhelp "ckick" "Clone Removal" "/ckick \[channel\] \[addresslevel\] \[reason\]" "None" "Finds and removes all clones on \[channel\] whos masks match using \[addresslevel\]. If \[channel\] is omitted, the command defaults to the current channel. If \[addresslevel\] is omitted, the command defaults to using 5. Lastly, if \[reason\] is omitted, the command defaults to your script default reason." "Clone"
+addhelp "cscan" "Clone Scanner" "/cscan \[channel\] \[addresslevel\]" "None" "Locates all clones on \[channel\] whos masks match using \[addresslevel\]. If \[channel\] is omitted, the command defaults to the current channel. If \[addresslevel\] is omitted, the command defaults to using 5." "Clone"
+addhelp "cmd" "Clone MassDeop" "/cmd \[channel\]" "None" "Divides a massdeop on \[channel\] between your active clones. If \[channel\] is left out, the active channel is used." "Clone"

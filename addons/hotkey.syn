@@ -1,0 +1,95 @@
+@define@ syntax extension
+#--------syntax ripped hotkey definitions--------#
+
+####
+#### HotKeys
+####
+
+hotkey TAB {
+  if {[config switchtab]} {
+    if {[isin [channels] [window_name]]} {
+      set nicks [clist all [window_name]]
+      set text [input get_text]
+      set sel [input get_sel_start]
+      set start [wordstart $text [expr {$sel - 1}]]
+      set done ""
+
+      if { $start == 0 && [string index $text 0] == "/" } { return }
+
+      
+      set wcomp [string range $text $start end]
+      set newcomp ""
+      for { set i 0 } { $i < [string length $wcomp] } { incr i } {
+        set char [string index $wcomp $i]
+        if { $char == " " } { break } else { append newcomp $char }
+      }
+      set wcomp $newcomp
+      
+      #try nickcompletion
+      set done "[string trim [nickc [window_name] $wcomp]]"
+      if { $done == $wcomp || $done == 0 } { set done "" }
+      #try channel names
+      if { $done == "" && $wcomp != "" } {
+        foreach i [lsort [channels]] {
+          if [string match *[string tolower $wcomp]* [string tolower $i]] {
+            set done $i
+            break
+          }
+        }
+      }
+      #try nickcycling
+      if { $done == "" } {
+        set done "[string trim [nnickc [window_name] $wcomp]]"
+      }
+      input set_text "[string range $text 0 [expr {$start - 1}]]$done[string range $text [expr {$start + [string length $wcomp]}] end]"
+      input set_sel_start [expr {$start + [string length $done]}]
+    }
+  } else { 
+    if {[info exists tabs] && [string length [lindex $tabs 0]]} {
+      if {![info exists tabnum]} { set tabnum 0 }
+      if {![string length [lindex $tabs $tabnum]]} { set tabnum 0 }
+      input set_text "[lindex $tabs $tabnum]"
+      input set_sel_start [expr [string length [lindex $tabs $tabnum]] + 1]
+      incr tabnum
+    }
+  }
+  complete
+}
+
+hotkey control+d {
+  if {[config switchtab]} {
+    if {[info exists tabs] && [string length [lindex $tabs 0]]} {
+      if {![info exists tabnum]} { set tabnum 0 }
+      if {![string length [lindex $tabs $tabnum]]} { set tabnum 0 }
+      input set_text "[lindex $tabs $tabnum]"
+      input set_sel_start [expr [string length [lindex $tabs $tabnum]] + 1]
+      incr tabnum
+    }
+  } else { 
+    if {[isin [channels] [window_name]]} {
+      if {![string length [lrange [rflist [split [input get_text]] ""] 1 end]]} {
+        input set_text "[string trim [nnickc [window_name] [rflist [split [input get_text]] ""]]] "
+      } else {
+        input set_text "[join [lrange [rflist [split [input get_text]] ""] 0 [expr [llength [rflist [split [input get_text]] ""]] - 2]]] [nnickc [window_name] [lindex [rflist [split [input get_text]] ""] [expr [llength [rflist [split [input get_text]] ""]] - 1]]] "
+      }
+      input set_sel_start "[string length [split [input get_text]]]"
+    }
+  }
+  complete
+}
+hotkey shift+F1 { if {![validchan [channel]]} { synecho x "[eheader "AutoKick"] Invalid channel specified..." } elseif {![info exists rejkick([string tolower [channel]])]} { synecho x "[eheader "AutoKick"] No valid autokicks set for [channel]..." } else { synecho x "[eheader "AutoKick"] AutoKicking [b][lindex $rejkick([string tolower [channel]]) 0][b] off [b][channel][b]..." ; /k [lindex $rejkick([string tolower [channel]]) 0] AutoKick } }
+hotkey shift+F2 { if {![validchan [channel]]} { synecho x "[eheader "AutoKick"] Invalid channel specified..." } elseif {![info exists rejkick([string tolower [channel]])]} { synecho x "[eheader "AutoKick"] No valid autokicks set for [channel]..." } else { synecho x "[eheader "AutoKick"] AutoKickBanning [b][lindex $rejkick([string tolower [channel]]) 0][b] off [b][channel][b]..." ; /kb [lindex $rejkick([string tolower [channel]]) 0] AutoKickBan } }
+hotkey shift+F3 { if {![validchan [channel]]} { synecho x "[eheader "AutoKick"] Invalid channel specified..." } elseif {![info exists rejkick([string tolower [channel]])]} { synecho x "[eheader "AutoKick"] No valid autokicks set for [channel]..." } else { synecho x "[eheader "AutoKick"] AutoDeoping [b][lindex $rejkick([string tolower [channel]]) 0][b] on [b][channel][b]..." ; /deop [lindex $rejkick([string tolower [channel]]) 0] } }
+
+hotkey F1 { if {![string length [get_cookie quickkey(1)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#1[b]) could not be located... use /qk 1 <command> to set..." } else { /tcl [get_cookie quickkey(1)] } }
+hotkey F2 { if {![string length [get_cookie quickkey(2)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#2[b]) could not be located... use /qk 2 <command> to set..." } else { /tcl [get_cookie quickkey(2)] } }
+hotkey F3 { if {![string length [get_cookie quickkey(3)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#3[b]) could not be located... use /qk 3 <command> to set..." } else { /tcl [get_cookie quickkey(3)] } }
+hotkey F4 { if {![string length [get_cookie quickkey(4)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#4[b]) could not be located... use /qk 4 <command> to set..." } else { /tcl [get_cookie quickkey(4)] } }
+hotkey F5 { if {![string length [get_cookie quickkey(5)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#5[b]) could not be located... use /qk 5 <command> to set..." } else { /tcl [get_cookie quickkey(5)] } }
+hotkey F6 { if {![string length [get_cookie quickkey(6)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#6[b]) could not be located... use /qk 6 <command> to set..." } else { /tcl [get_cookie quickkey(6)] } }
+hotkey F7 { if {![string length [get_cookie quickkey(7)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#7[b]) could not be located... use /qk 7 <command> to set..." } else { /tcl [get_cookie quickkey(7)] } }
+hotkey F8 { if {![string length [get_cookie quickkey(8)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#8[b]) could not be located... use /qk 8 <command> to set..." } else { /tcl [get_cookie quickkey(8)] } }
+hotkey F9 { if {![string length [get_cookie quickkey(9)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#9[b]) could not be located... use /qk 9 <command> to set..." } else { /tcl [get_cookie quickkey(9)] } }
+hotkey F10 { if {![string length [get_cookie quickkey(10)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#10[b]) could not be located... use /qk 10 <command> to set..." } else { /tcl [get_cookie quickkey(10)] } }
+hotkey F11 { if {![string length [get_cookie quickkey(11)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#11[b]) could not be located... use /qk 11 <command> to set..." } else { /tcl [get_cookie quickkey(11)] } }
+hotkey F12 { if {![string length [get_cookie quickkey(12)]]} { synecho x "[eheader "QuickKey"] QuickKey([b]\#12[b]) could not be located... use /qk 12 <command> to set..." } else { /tcl [get_cookie quickkey(12)] } }

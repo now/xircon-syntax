@@ -1,0 +1,204 @@
+@define@ syntax theme
+@thname@ default theme
+
+#>># Theme Echos
+themeecho "Now loading 16synecho x15..."
+themeecho "Theme created by 16pcppopper15..."
+
+#>># Theme Color Initalization
+styleset bold             "\x02\00316,01"
+styleset lightbold        "\00316,01"
+styleset underline        "\x1F\00316,01"
+styleset lightunderline   "\x1F\00316,01"
+
+#>># Theme StyleVars
+stylevar timerA           "[string tolower [clock format [clock seconds] -format "11@14\[10%I14:10%M14:10%S14%p14\]"]]"
+stylevar timerB           "[string tolower [clock format [clock seconds] -format "11@14\[10%I14:10%M14:10%S14%p14\]"]]"
+stylevar dbullet          "14\xF015\xF016\xF015"
+stylevar abullet          "14\xFE15\xFE16\xFE15"
+stylevar mbullet          "14\xC415\xC416\xC415"
+
+#>># Theme - Wallops(channel)
+styleset xwallop          "(xwallop) $text"
+styleset channelwallop    "(ops/$chan) $text"
+styleset wallopprefix     "14\[16wallop14\]15 "
+styleset schanwallopstyle "[dbullet] (16wallop15($chan) $text"
+styleset sxwallopstyle    "[dbullet] (16wallop15([join [config xwallnicks] ","]) $text"
+styleset usrwallopsstyle  "16!15$nick\($user@$host\)16!15 $text"
+
+#>># Theme - Wallops(server)
+styleset ssrvwallopstyle  "14Ä15Ä16> 14(15WallOps14)15 $text"
+styleset srvwallopsstyle  "16!15$host16!15 $text"
+
+#>># Theme - Channel\Query Text
+styleset dccselftext      "\[[shade "$nick" 10 11 16]\] 15$text"
+styleset dccselfaction    "@ \[[shade "$nick" 10 11 16]\] 15$text"
+styleset dccusertext      "\[16$nick15\] 15$text"
+styleset dccuseraction    "@ 16$nick15 15$text"
+styleset selftext         "\[[shade "$nick" 10 11 16]\] 15$text"
+styleset selfaction       "@ \[[shade "$nick" 10 11 16]\] 15$text"
+styleset usertext         "\[16$nick15\] 15$text"
+styleset useraction       "@ 16$nick15 15$text"
+styleset msgselftext      "\[[shade "$nick" 10 11 16]\] 15$text"
+styleset msgselfaction    "@ \[[shade "$nick" 10 11 16]\] 15$text"
+styleset msgusertext      "\[16$nick15\] 15$text"
+styleset msguseraction    "@ 16$nick15 15$text"
+styleset highlighttext    "[shade "\[$nick\]" 14 10 11] 15$text"
+styleset highlightaction  "@ [shade "$nick" 14 10 11] 15$text"
+styleset decryptedslftext "\[[shade "$nick" 10 11 16]\] 16crypt14> 15$text"
+styleset decryptedusrtext "\[16$nick15\]16crypt14> 15$text"
+styleset selfspylinktext  "\[[shade "$nick" 10 11 16]\] 16spylink14>15 $text"
+styleset selfspylinkmsg   "14>4>5>15 (16spylink14\\16msg15($nick)) $text"
+
+#>># Theme - DCC
+styleset percentbar1      "14\xDB15"
+styleset percentbar2      "15\xDB15"
+styleset percentbar3      "16\xDB15"
+styleset percentbar4      "5\xDB15"
+styleset percentbar5      "4\xDB15"
+styleset dccline1         "[llb][b][align $num 2][b][lrb][llb][b][align $type 10][b][lrb][llb][align $nick 10][lrb][llb][align $filename 20][lrb][llb][align [string tolower [clock format $start -format "%I:%M%p"]] 10][lrb]"
+styleset dccline2         "[llb][b]  [b][lrb][llb][align $complete 10][lrb][llb][align $total 10][lrb][llb][align $pbar 20][lrb][llb][align $speed 10][lrb]"
+
+#>># Theme - Channel Events
+styleset aopjoinstyle     "[mbullet] 14(11join(autoop)14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset akickjoinstyle   "[mbullet] 14(11join(autokick)14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset avoicejoinstyle  "[mbullet] 14(11join(autovoice)14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset joinstyle        "[mbullet] 14(11join14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset sjoinstyle       "[mbullet] 14(11join14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset partstyle        "[mbullet] 14(11part14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA]"
+styleset quitstyle        "[mbullet] 14(11signoff14\\10$chan14) 11$nick14\[10$user14@10$host14\] [timerA] 14\[15$text14\]15"
+styleset servmodestyle    "[mbullet] 14(11servermode14\\10$chan14) 11$host15 sets mode 14\[15$text14\]15"
+styleset modestyle        "[mbullet] 14(11mode14\\10$chan14) 11$nick14\[10$user14@10$host14\]15 sets mode 14(15$text14)15"
+styleset topicstyle       "[mbullet] 14(11topic14\\10$chan14) 11$nick14\[10$user14@10$host14\]15 sets topic 14(15$text14)15"
+styleset kickstyle        "[mbullet] 14(11kick14\\10$chan14) 11$nick14\[10$user14@10$host14\]15 kicked 14\[10$kicked14\]15 off $chan 14\[15$text14\]15"
+styleset skickstyle       "[mbullet] 14(11kick14\\10$chan14) 11$nick14\[10$user14@10$host14\]15 kicked YOU off $chan 14\[15$text14\]15"
+styleset nickstyle        "[mbullet] 14(11nick14\\10change14) 10$nick14 14Ä15Ä16> 11$newnick14"
+styleset snickstyle       "[mbullet] 14(11nick14\\10change14) 10$nick14 14Ä15Ä16> 11$newnick14"
+
+#>># Theme - Message\CTCP
+styleset ctcpreplystyle   "(16$nick15($user@$host) $req Reply) $text"
+styleset ctcpstyle        "(16$nick15($user@$host) $req) $text"
+styleset cctcpstyle       "(16$nick15($user@$host)(16$chan15) $req) $text"
+styleset msgstyle         "14>4>5>15 16msg15(16$nick15($user@$host)) $text"
+styleset decryptedmsg     "14>4>5>15 16c-msg15(16$nick15($user@$host)) $text"
+styleset actionstyle      "14>4>5>15 16action15(16$nick15($user@$host)) ù 16$nick15 $text"
+styleset noticestyle      "-16$nick15($user@$host)- $text"
+styleset cnoticestyle     "-16$nick15($user@$host):16$chan15- $text"
+styleset smsgstyle        "14>4>5>15 (16msg15($nick)) $text"
+styleset scryptedmsgstyle "14>4>5>15 (16crypted-msg15($nick)) $text"
+styleset sctcpstyle       "14>4>5>15 (16ctcp15($nick)) (16$req15) $text"
+styleset snoticestyle     "14>4>5>15 (16notice15($nick)) $text"
+styleset sactionstyle     "14>4>5>15 (16action15($nick)) $text"
+
+#>># Theme - WhoIs\WhoWas
+styleset whowasstart      "14ÚÄÄ15Ä16-15Ä14ÄÄ(( whowas info: [align 16$nick14 9] ))ÄÄ-Ä-Ä15Ä16-15Ä15Ä14Ä--ÄÄ-Ä15Ä-16Ä-Ä 14-Ä15Ä16-Ä- 15-16Ä"
+styleset whoisstart       "14ÚÄÄ15Ä16-15Ä14ÄÄ(( whois info: [align 16$nick14 9] ))ÄÄ-Ä-Ä15Ä16-15Ä15Ä14Ä--ÄÄ-Ä15Ä-16Ä-Ä 14-Ä15Ä16-Ä- 15-16Ä"
+styleset whoisaddr        "14³ 16address   14³15 $user14@15$host 14\[15$type14\]15"
+styleset whoisquote       "14³ 16quote     15³15 $text"
+styleset whoisdata        "14³ 16userinfo  14³15 flags14(16[lindex $text 1]14)15 channels14(16[lindex $text 0]14)"
+styleset whoischan        "14³ 16channels  16³15 [replace [replace "$text" "#" "16#15"] "@" "16@15"]"
+styleset whoisserv        "14³ 16server    15³15 16$serv:15 $text"
+styleset whoisidle        "14³ 16idle      14³15 [durationstyle $text " yr" " day" " hr" " min" " sec" "s" " " "[boldstart]" ""]"
+styleset whoisaway        "14³ 16away      14³15 $text"
+styleset whoisoper        "14³ 16operator  14³ ..16!@#$15"
+styleset whoishelpop      "14³ 16helpop    14³ ..16!@#$15"
+styleset whoisend         "14ÀÄÄ15Ä16-15Ä14ÄÄÄÄÄÄÁÄÄÄÄÄ15Ä16Ä15Ä14Ä15Ä16Ä-Ä15Ä14ÄÄÄ--ÄÄÄ-Ä15ÄÄ-16ÄÄ-Ä 14Ä-Ä15Ä16-ÄÄ- 15-16Ä"
+
+#>># Theme - Away Look
+styleset awaymsg          "is gone... $text <since([string tolower [clock format $time -format "%I:%M%p"]])> <(l\\$msglog p\\$pager)syntax>"
+styleset backmsg          "is back... $text"
+styleset rawawaymsg       "$text <since([string tolower [clock format $time -format "%I:%M%p"]])>"
+
+#>># Theme - JoinStats
+styleset jointopic        "[abullet] (16topic\[15$chan16\]15) $text"
+styleset jointopicsetby   "[abullet] (16topic\[15$chan16\]15) set by 16$nick15 on $date"
+styleset joinnames        "[abullet] (16names\[15$chan16\]15) Listing users on 16$chan15(16$total15)"
+styleset joinnameslstart  "[abullet] 14ÚÄÄ15Ä16-15Ä14ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä-Ä15Ä16-15Ä15Ä14Ä--ÄÄ-Ä15Ä-16Ä-Ä 14-Ä15Ä16-Ä- 15-16Ä"
+styleset joinnamesledge   "[abullet] 14³15"
+styleset joinnameslsep    "14³"
+styleset joinnameslentry  "16$mode15[align $nick 10]"
+styleset joinnameslend    "[abullet] 14ÀÄÄ15Ä16-15Ä14ÄÄÄÄÄÄÄ15Ä16Ä-15ÄÄ15Ä14ÄÄÄ--ÄÄÄ-Ä15ÄÄ-16ÄÄ-Ä 14Ä-Ä15Ä16-ÄÄ- 15-16Ä"
+styleset joinsynch        "[abullet] (16synch\[15$chan16\]15) 16$text15 seconds"
+styleset joinmodes        "[abullet] (16modes\[15$chan16\]15) 16$text15"
+styleset joincreated      "[abullet] (16crted\[15$chan16\]15) $text"
+styleset joinurl          "[abullet] (16url  \[15$chan16\]15) $text"
+
+#>># XDCC Styles
+styleset xdccstart        ".syntax. $packs Pack(s) Offered -- Slots $openslots\\$totalslots"
+styleset xdccnote         "(xx) `--- $text"
+styleset xdccpack         "(#$number) [align "$getsx" 5] ($sizek)  $text"
+styleset xdccend          ".syntax. /ctcp [my_nick] xdcc send\\tsend #n for pack #n"
+styleset xdccnotice       "\[syntax\] Now sending you pack #$packno (( $packdesc )) which is $packsizek in $filecount files..."
+styleset xdcctnotice      "\[syntax\] Now sending you pack #$packno (( $packdesc )) which is $packsizek in $filecount files via TDCC..."
+
+#>># Kick Styles
+styleset kickmsgstyle     "<syn> $text"
+styleset viofloodkick     "Violation Defiance on $chan: $violations violations in $seconds seconds..."
+styleset textfloodkick    "TextFlood Detected on $chan: $lines lines in $seconds seconds..."
+styleset nickfloodkick    "NickFlood Detected on $chan: $changes changes in $seconds seconds..."
+styleset joinfloodkick    "JoinFlood Detected on $chan: $joins joins in $seconds seconds..."
+styleset textoverflowkick "TextFlood Detected on $chan: $len > $maxlen character string max..."
+styleset massdeopkick     "MassDeop Detected on $chan: $deops deops in $seconds seconds..."
+styleset masskickkick     "MassKick Detected on $chan: $kicks kicks in $seconds seconds..."
+styleset repeatkick       "Repeating Detected on $chan..."
+
+#>># Theme - Realys
+styleset msgrelay         "($nick($user@$host) $text"
+styleset smsgrelay        "($type($nick) $text"
+styleset operkillrelay    "((OperKill)) $nick was killed by $oper($killcount) ($text)"
+
+#>># Theme - Misc.
+styleset loadechostyle    "14#15#16#15 [eheader "Load"] $text"
+styleset modesortorder    "+iklmnpstR"
+styleset defbullet        "14\xF015\xF016\xF0"
+styleset spylinktag       "($dest)"
+styleset nickcomplete     "$nick:"
+styleset notifylogon      "[abullet] [eheader "Signon"] [timerA] 11$nick14\[10$user14@10$host14\]15 is on IRC 14\[15$text14\]15..."
+styleset notifylogoff     "[abullet] [eheader "Signoff"] [timerA] 10$nick15 has left IRC..."
+styleset operkillstyle    "[abullet] [eheader "OperKill"] 16$nick15 was killed by 16$oper14\(16$killcount14\)15 14(15$text14)"
+styleset boxtop           "14ÚÄÄ15Ä16-15Ä14ÄÄÍ4\[5\[ $text 5\]4\]14ÍÄÄ-Ä-Ä15Ä16-15Ä15Ä14Ä-Ä15Ä-16Ä-Ä 14-Ä15Ä16-Ä- 15-16Ä"
+styleset boxside          "14³15 $text"
+styleset boxbottom        "14ÀÄÄ15Ä16-15Ä14ÄÄÄÄÄÄÄ15Ä16Ä-15ÄÄ15Ä14ÄÄÄ--ÄÄÄ-Ä15ÄÄ-16ÄÄ-Ä 14Ä-Ä15Ä16-ÄÄ- 15-16Ä"
+styleset gboxtop          "14ÚÄÄ15Ä16-15Ä14ÄÄÄÄÄ-Ä-ÄÄÄÄÄ15Ä16Ä-15ÄÄ15Ä14ÄÄÄÄÄÄÄÄ-Ä-Ä15Ä16-15Ä15Ä14Ä-Ä15Ä-16Ä-Ä 14-Ä15Ä16-Ä- 15-16Ä"
+styleset gboxside         "14³15 $text"
+styleset gboxbottom       "14ÀÄÄ15Ä16-15Ä14ÄÄÄÄÄÄÄ15Ä16Ä-15ÄÄ15Ä14ÄÄÄ--ÄÄÄ-Ä15ÄÄ-16ÄÄ-Ä 14Ä-Ä15Ä16-ÄÄ- 15-16Ä"
+styleset llb              "16\[15"
+styleset lrb              "16\]15"
+styleset logstyle         "($idlet) [string tolower [clock format [clock seconds] -format "\[%m/%d/%y %I:%M:%S%p\]"]] $text"
+styleset eheader          "16:14:15\[11 $text 15\]14:16:"
+#"10(11(16-$text-11)10)15"
+styleset servertag        "(16server15)"
+styleset motdheader       "14\[16m15otd14\]"
+styleset motdstart        ""
+styleset motdend          ""
+styleset chanbanned       "[eheader "Ban"] Ban [b]$banmask[b]\[[sb]$chan[sb]\] was placed by [b][lindex [split $placer "!@"] 0][b]([sb][lindex [split $placer "!@"] 1]@[lindex [split $placer "!@"] 2][sb]) on [clock format $date -format "%m/%d/%y at %I:%M:%S%p"]..."
+
+#>># Theme - Dcc
+styleset dccrecvcomplete   "[eheader "dcc"] Transfer completed([sb]get[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) from [b]$nick[b] in [sb]${elapsed}[sb]secs \[[sb]$kbps[sb] kbps\]..."
+styleset dccsendcomplete   "[eheader "dcc"] Transfer completed([sb]send[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) to [b]$nick[b] in [sb]${elapsed}[sb]secs \[[sb]$kbps[sb] kbps\]..."
+styleset dccrecvrequest    "[eheader "dcc"] Transfer request([sb]get[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) from [b]$nick[b]..."
+styleset dccsendrequest    "[eheader "dcc"] Transfer request([sb]send[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) to [b]$nick[b]..."
+styleset dccrecvstarted    "[eheader "dcc"] Transfer established([sb]get[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) from [b]$nick[b]..."
+styleset dccsendstarted    "[eheader "dcc"] Transfer established([sb]send[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) to [b]$nick[b]..."
+styleset dccrecvtermd      "[eheader "dcc"] Transfer terminated([sb]get[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) from [b]$nick[b] \[broken at: [sb]${complete}k[sb]\]..."
+styleset dccsendtermd      "[eheader "dcc"] Transfer terminated([sb]send[sb]\\[b]$filename[b]\[[sb]${size}k[sb]\]) to [b]$nick[b] \[broken at: [sb]${complete}k[sb]\]..."
+
+#>># Theme - Opervision
+styleset ovlinkin         "16<<15ÄÄ14Ä"
+styleset ovlinkout        "14Ä15ÄÄ16>>"
+styleset ovlinkbroke      "14Ä15Ä16\\15Ä14Ä"
+styleset ovledge          "14("
+styleset ovredge          "14)"
+styleset opervisiontag    "14<15o16v14>15"
+
+#>># Theme - Window Styles
+styleset mainwindowchan   "\[syntax\\synecho\]"
+styleset mainwindowstat   "\[syntax\\synecho\]"
+styleset mainwindowquery  "\[syntax\\synecho\] [window_name](query)"
+styleset mainwindowdcc    "\[syntax\\synecho\] [window_name](dcc)"
+styleset mainwindowdcon   "\[syntax\\synecho\] \[disconnected\]"
+styleset statuswindowcon  "status\[connected\] [my_nick][expr {[string length "[my_host]"]?"([my_user]@[my_host])":""}] mode(+[mode]) server([lindex [xserver] 0]:[lindex [xserver] 1])"
+styleset statuswindowdcon "status\[disconnected\]"
+styleset channelwindow    "$chan (+$mode) $topic"
+
+themeecho "Theme load 0completed15..."
